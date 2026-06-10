@@ -1,0 +1,101 @@
+import { EnergyRecord } from '../types/energy';
+
+export interface CSVParseResult {
+  success: boolean;
+  records: EnergyRecord[];
+  error?: string;
+}
+
+export function parseEnergyCSV(csvText: string): CSVParseResult {
+  try {
+    const lines = csvText.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+    if (lines.length < 2) {
+      return { success: false, records: [], error: 'El archivo está vacío o no contiene filas de datos.' };
+    }
+
+    // Detect separator: comma or semicolon
+    const headerLine = lines[0];
+    let separator = ',';
+    if (headerLine.includes(';')) {
+      separator = ';';
+    }
+
+    // Split headers and remove surrounding quotes
+    const headers = headerLine.split(separator).map(h => h.trim().replace(/^["']|["']$/g, ''));
+
+    // Required headers validation
+    const requiredHeaders = ['date', 'hour', 'sector', 'equipment', 'consumption_kwh'];
+    const missingHeaders = requiredHeaders.filter(rh => !headers.includes(rh));
+    
+    if (missingHeaders.length > 0) {
+      return {
+        success: false,
+        records: [],
+        error: `Faltan las siguientes columnas obligatorias: ${missingHeaders.join(', ')}. Las columnas permitidas son date, hour, sector, equipment, consumption_kwh, production_units, external_temperature, shift, cost_per_kwh.`
+      };
+    }
+
+    const records: EnergyRecord[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      // Split preserving values inside quotes
+      const line = lines[i];
+      const values = line.split(separator).map(v => v.trim().replace(/^["']|["']$/g, ''));
+      
+      if (values.length < requiredHeaders.length) {
+        continue; // skip malformed lines
+      }
+
+      const rowMap: Record<string, string> = {};
+      headers.forEach((header, index) => {
+        if (values[index] !== undefined) {
+          rowMap[header] = values[index];
+        }
+      });
+
+      // Parse and validate types
+      const hour = parseInt(rowMap.hour, 10);
+      const consumption = parseFloat(rowMap.consumption_kwh);
+      const production = rowMap.production_units ? parseInt(rowMap.production_units, 10) : 0;
+      const temperature = rowMap.external_temperature ? parseFloat(rowMap.external_temperature) : 15.0;
+      const costKwh = rowMap.cost_per_kwh ? parseFloat(rowMap.cost_per_kwh) : 45.0;
+
+      if (isNaN(hour) || hour < 0 || hour > 23) {
+        return { success: false, records: [], error: `Fila ${i + 1}: El campo 'hour' debe ser un número entero entre 0 y 23. Valor: ${rowMap.hour}` };
+      }
+      if (isNaN(consumption) || consumption < 0) {
+        return { success: false, records: [], error: `Fila ${i + 1}: El campo 'consumption_kwh' debe ser un número positivo. Valor: ${rowMap.consumption_kwh}` };
+      }
+
+      // Determine shift if missing
+      let shift: 'Mañana' | 'Tarde' | 'Noche';
+      if (rowMap.shift) {
+        const s = rowMap.shift.toLowerCase();
+        if (s.includes('mañ') || s.includes('man') || s.includes('morn')) shift = 'Mañana';
+        else if (s.includes('tard') || s.includes('aft')) shift = 'Tarde';
+        else shift = 'Noche';
+      } else {
+        if (hour >= 6 && hour < 14) shift = 'Mañana';
+        else if (hour >= 14 && hour < 22) shift = 'Tarde';
+        else shift = 'Noche';
+      }
+
+      records.push({
+        date: rowMap.date, // format YYYY-MM-DD
+        hour,
+        sector: rowMap.sector || 'General',
+        equipment: rowMap.equipment || 'Tablero General',
+        consumption_kwh: parseFloat(consumption.toFixed(2)),
+        production_units: isNaN(production) ? 0 : production,
+        external_temperature: isNaN(temperature) ? 15.0 : parseFloat(temperature.toFixed(1)),
+        shift,
+        cost_per_kwh: isNaN(costKwh) ? 45.0 : parseFloat(costKwh.toFixed(2)),
+        status: 'Operativo'
+      });
+    }
+
+    return { success: true, records };
+  } catch (err: any) {
+    return { success: false, records: [], error: `Error en lectura del archivo: ${err.message || err}` };
+  }
+}
