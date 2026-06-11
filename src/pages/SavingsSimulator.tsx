@@ -312,7 +312,7 @@ Este reporte evalúa la vulnerabilidad del consumo energético de la instalació
 La generación termoeléctrica local por turbinas de gas natural en Tierra del Fuego tiene un factor de emisión de **0.37 kg CO2/kWh**.
 - **Escenario A**: ${(scA.kwh * 0.37 / 1000).toFixed(2)} tCO2 mensuales (${((scA.kwh * 0.37 * 12) / 1000).toFixed(1)} tCO2 anuales).
 - **Escenario C**: ${(scC.kwh * 0.37 / 1000).toFixed(2)} tCO2 mensuales (${((scC.kwh * 0.37 * 12) / 1000).toFixed(1)} tCO2 anuales).
-- **Reducción Recomendada**: Implementar eficiencia pasiva de calefacción (aislación térmica) permite mitigar el consumo residencial e industrial en hasta un **20%**, reduciendo las emisiones equivalentes en **${((scC.kwh * 0.20 * 0.37 * 12) / 1000).toFixed(1)} tCO2** anuales en el escenario más severo.
+- **Reducción Recomendada**: Implementar eficiencia pasiva de calefacción (aislación térmica) permite mitigar el consumo de la planta en hasta un **20%**, reduciendo las emisiones equivalentes en **${((scC.kwh * 0.20 * 0.37 * 12) / 1000).toFixed(1)} tCO2** anuales en el escenario más severo.
 
 ---
 

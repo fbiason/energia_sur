@@ -32,34 +32,34 @@ export function getAssistantResponse(
 
   // 1. GENERAL WINTER IMPACTS & SUBSIDY ELIMINATION IN WINTER
   if (msg.includes('invierno') || msg.includes('frío') || msg.includes('frio') || msg.includes('estacional')) {
-    responseText = `El próximo invierno tendrá un impacto crítico en tus costos si se combinan variables climáticas y de quita de subsidios:\n\n` +
-      `- **Escenario A (Subsidio actual + invierno promedio):** Tus costos mensuales estimados serán de aproximadamente **${formatCurrency(records.reduce((sum, r) => sum + r.consumption_kwh, 0) / 4 * records[0].cost_per_kwh)}**.\n` +
-      `- **Escenario B (Reducción del 50% + invierno severo):** El consumo aumentará un **25%** por la calefacción eléctrica de emergencia y la tarifa se duplicará, resultando en un aumento del **150%** en tu factura mensual.\n` +
-      `- **Escenario C (Eliminación total + invierno extremo):** El consumo se disparará un **50%** por heladas extremas y la tarifa se cuadruplicará, resultando en un aumento del **500%** de costos (factura mensual multiplicada por 6).\n\n` +
-      `**Recomendación IA:** Mejorar el aislamiento de aberturas de inmediato y priorizar sistemas de calefacción a gas natural en lugar de radiadores eléctricos de resistencia.`;
+    responseText = `El próximo invierno tendrá un impacto crítico en los costos de la planta industrial si se combinan variables climáticas y la quita de subsidios:\n\n` +
+      `- **Escenario A (Subsidio actual + invierno promedio):** El costo mensual estimado será de aproximadamente **${formatCurrency(records.reduce((sum, r) => sum + r.consumption_kwh, 0) / 4 * records[0].cost_per_kwh)}**.\n` +
+      `- **Escenario B (Reducción del 50% + invierno severo):** El consumo aumentará un **25%** debido al uso extensivo de la calefacción de soporte en el depósito e iluminación en los turnos de mañana/tarde (solo 7 horas de sol). Con tarifa duplicada, resulta en un incremento del **150%** mensual.\n` +
+      `- **Escenario C (Eliminación total + invierno extremo):** El consumo subirá un **50%** por el precalentamiento continuo de maquinaria y calefactores a resistencia para resguardar tuberías. Con tarifa cuadruplicada, el incremento de costos será del **500%** mensual.\n\n` +
+      `**Recomendación IA:** Programar el precalentamiento de motores de las líneas de producción de forma secuencial y sellar las aberturas del depósito de inmediato.`;
   }
 
   // 2. HIGHEST RISK ENERGY MONTH
   else if (msg.includes('mes') || msg.includes('riesgo') || msg.includes('crítico') || msg.includes('critico')) {
-    responseText = `El mes de **Julio (Invierno)** presenta el mayor riesgo energético y de vulnerabilidad financiera en Tierra del Fuego. Las razones son:\n\n` +
-      `1. **Temperatura mínima extrema**: Las olas de frío polar empujan las temperaturas bajo cero (promedio diario de -1°C, mínimas de -16°C), disparando el consumo de calefacción de soporte.\n` +
-      `2. **Luz diurna reducida (7 horas)**: Provoca un incremento del **142%** en las horas de funcionamiento del alumbrado público y residencial comparado con el verano.\n` +
-      `3. **Peligro de congelamiento**: Afecta directamente al sector forestal en Tolhuin (aserraderos cesan actividad por congelamiento de rollizos de madera) y exige desescarches de emergencia en cámaras pesqueras de Ushuaia.`;
+    responseText = `El mes de **Julio (Invierno)** presenta el mayor riesgo energético y de vulnerabilidad financiera para la planta industrial en Tierra del Fuego. Las razones son:\n\n` +
+      `1. **Temperatura mínima extrema**: Las olas de frío polar empujan las temperaturas bajo cero (mínimas históricas de -16°C), disparando el consumo en la calefacción de oficinas y del sistema de calefacción general.\n` +
+      `2. **Luz diurna reducida (7 horas)**: Provoca un incremento del **142%** en las horas de funcionamiento de la iluminación de la planta e iluminación de oficinas en comparación con el verano.\n` +
+      `3. **Peligro de congelamiento**: Exige desescarches continuos de emergencia en la Cámara Frigorífica de Ushuaia y aumenta las ineficiencias de arranque de los motores principales de producción en Río Grande.`;
   }
 
   // 3. HOW MUCH TO REDUCE CONSUMPTION TO MAINTAIN COSTS
   else if (msg.includes('reducir') || msg.includes('mantener') || msg.includes('ahorrar')) {
-    responseText = `Para mantener estables tus costos de facturación actuales frente a las quitas de subsidio proyectadas:\n\n` +
-      `- Ante una **reducción del 50% de subsidio (con invierno severo)**: Deberías reducir tu consumo en un **60%**, lo cual es inviable sin cambiar a artefactos a gas y apagar sistemas no operativos.\n` +
-      `- Ante la **eliminación total del subsidio (con invierno extremo)**: Requerirías una reducción del **83%** de consumo energético. Esto demuestra que la eficiencia operativa no es suficiente y se necesita una reestructuración de la envolvente térmica (aislación de techos y ventanas DVH).`;
+    responseText = `Para mantener estables los costos de facturación de la planta industrial frente a las quitas de subsidio proyectadas:\n\n` +
+      `- Ante una **reducción del 50% de subsidio (con invierno severo)**: Se debería reducir el consumo en un **60%**, lo cual es inviable sin suspender turnos productivos nocturnos o automatizar por completo las consignas térmicas de calefacción.\n` +
+      `- Ante la **eliminación total del subsidio (con invierno extremo)**: Requerirías una reducción del **83%** de consumo energético. Esto demuestra que la eficiencia simple no es suficiente; se necesita inversión en precalentamiento a gas y aislación térmica estructural en depósitos de Tolhuin.`;
   }
 
   // 4. MOST VULNERABLE SECTORS
   else if (msg.includes('vulnerabilidad') || msg.includes('sectores') || msg.includes('sector')) {
-    responseText = `Los sectores de mayor vulnerabilidad energética detectados en el sistema aislado fueguino son:\n\n` +
-      `1. **Residencial Ushuaia y Río Grande**: Muy expuestos por la falta de redes de gas natural en asentamientos nuevos, forzando calefacción por radiadores eléctricos ineficientes.\n` +
-      `2. **Turismo & Cabañas en Tolhuin**: Sufren una alta estacionalidad. En verano e invierno consumen mucha calefacción eléctrica por el flujo turístico, pero tienen baja resiliencia financiera.\n` +
-      `3. **Aserraderos & Madera Tolhuin**: Altamente vulnerables a suspensiones operativas por tormentas de nieve y congelación de rollizos durante el invierno.`;
+    responseText = `Los sectores industriales de mayor vulnerabilidad energética detectados en las operaciones son:\n\n` +
+      `1. **Calefacción y Oficinas (Ushuaia)**: Altamente vulnerables debido a las olas de frío extremo que quintuplican la demanda eléctrica de termostatos de soporte mal calibrados.\n` +
+      `2. **Cámara de frío (Ushuaia)**: Sujeta a alto consumo reactivo y acumulación acelerada de hielo (escarcha) en evaporadores durante las tormentas de nieve.\n` +
+      `3. **Líneas de Producción y Compresores (Río Grande)**: Afectadas por pérdidas de eficiencia en arranques en frío de los motores principales y fugas neumáticas durante temporales de viento severo.`;
   }
 
   // 5. EQUIPOS QUE MÁS CONSUMEN
@@ -92,22 +92,22 @@ export function getAssistantResponse(
 
   // 6. GENERAL RECOMMENDATIONS fallback
   else if (msg.includes('recomend') || msg.includes('suger') || msg.includes('que hago') || msg.includes('consejo')) {
-    responseText = "Recomendaciones clave de resiliencia productiva basadas en el análisis energético provincial:\n\n" +
-      "1. **Mantenimiento en Cámaras de Congelado (Ushuaia)**: Programar desescarches periódicos en invierno para evitar pérdida por hermeticidad.\n" +
-      "2. **Ajuste de Calefacción Hoteles/Comercios**: Apagar radiadores auxiliares en verano cuando la temperatura exterior supere los 8°C.\n" +
-      "3. **Planificación de Operación de Aserraderos (Tolhuin)**: Desplazar tareas intensivas de corte a primavera/verano, minimizando pérdidas invernales.\n" +
-      "4. **Aislación Estructural (Vientos Fuertes)**: Sellar aberturas para mitigar ráfagas promedio de 35 km/h que aumentan la disipación térmica.";
+    responseText = "Recomendaciones clave de resiliencia productiva basadas en el análisis energético industrial:\n\n" +
+      "1. **Mantenimiento en Cámara Frigorífica (Ushuaia)**: Programar desescarches periódicos en invierno para evitar pérdida por hermeticidad y escarcha.\n" +
+      "2. **Ajuste de Calefacción Oficinas**: Programar el apagado automático de radiadores de soporte en verano e implementar umbrales de 17°C.\n" +
+      "3. **Planificación de Arranques de Motores (Río Grande)**: Secuenciar el encendido de los motores principales L1 y L2 para reducir la potencia pico de arranque en mañanas frías.\n" +
+      "4. **Control de Fugas en Compresores**: Auditar juntas de la línea de aire comprimido vulnerables a ráfagas de viento y temporales externos.";
 
     dataSummary = {
       type: 'list',
       title: 'Plan de Acción Sugerido',
-      content: "- Desescarche de evaporadores pesqueros\n- Automatización de termostatos de soporte\n- Cese programado en Tolhuin por nevadas\n- Sellado de filtraciones de aire por ráfagas"
+      content: "- Desescarche de evaporadores en Ushuaia\n- Precalentamiento secuencial de motores L1 y L2\n- Calibración de termostatos de oficinas\n- Sellado de fugas en la línea de compresores"
     };
   }
 
   // 9. DEFAULT RESPONSE (FALLBACK)
   else {
-    responseText = `Hola. Soy el **Asistente EnergIA**, tu consultor de resiliencia energética en Tierra del Fuego. Analicé el conjunto de datos estacional (120 días).\n\n**Preguntas clave sobre prospectiva climática que podés hacerme:**\n- ¿Cómo impactará el próximo invierno en mis costos?\n- ¿Cuál es el mes de mayor riesgo energético?\n- ¿Cuánto debería reducir mi consumo para mantener mis costos actuales?\n- ¿Qué sectores presentan mayor vulnerabilidad?\n- ¿Qué recomendaciones climáticas clave debo aplicar?\n\n*Nota: La arquitectura está lista para integrarse con modelos LLM avanzados (como Gemini) a través de API.*`;
+    responseText = `Hola. Soy el **Asistente EnergIA**, tu consultor de resiliencia energética para la planta industrial en Tierra del Fuego. Analicé el conjunto de datos estacional (120 días).\n\n**Preguntas clave sobre prospectiva industrial que podés hacerme:**\n- ¿Cómo impactará el próximo invierno en los costos de planta?\n- ¿Cuál es el mes de mayor riesgo energético en la operación?\n- ¿Cuánto debería reducir el consumo para mantener costos?\n- ¿Qué sectores presentan mayor vulnerabilidad?\n- ¿Qué recomendaciones climáticas debo aplicar?\n\n*Nota: La arquitectura está lista para integrarse con modelos LLM avanzados (como Gemini) a través de API.*`;
   }
 
   return {

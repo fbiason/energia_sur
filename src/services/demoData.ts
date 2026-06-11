@@ -1,40 +1,34 @@
 import { EnergyRecord } from '../types/energy';
 
-// Tierra del Fuego Sectors and Location Mapping
+// Tierra del Fuego Sectors and Location Mapping (Industrial Plant context)
 export const SECTORS = [
-  'Residencial Ushuaia',
-  'Puerto & Pesca Ushuaia',
-  'Comercio & Hotelería USH',
-  'Residencial Río Grande',
-  'Industria Ley 19.640',
-  'Comercio RGD',
-  'Residencial Tolhuin',
-  'Turismo & Cabañas TLH',
-  'Aserraderos & Madera TLH'
+  'Línea de Producción 1',
+  'Línea de Producción 2',
+  'Cámara de frío',
+  'Compresores',
+  'Iluminación',
+  'Calefacción',
+  'Administración'
 ];
 
 export const EQUIPMENTS: Record<string, string[]> = {
-  'Residencial Ushuaia': ['Consumo Residencial USH'],
-  'Puerto & Pesca Ushuaia': ['Cámaras de Congelado Ushuaia'],
-  'Comercio & Hotelería USH': ['Calefacción y Luces Hoteleras'],
-  'Residencial Río Grande': ['Consumo Residencial RGD'],
-  'Industria Ley 19.640': ['Líneas de Ensamblaje Industrial'],
-  'Comercio RGD': ['Climatización Comercial RGD'],
-  'Residencial Tolhuin': ['Consumo Residencial TLH'],
-  'Turismo & Cabañas TLH': ['Calefacción Cabañas Tolhuin'],
-  'Aserraderos & Madera TLH': ['Sierras y Equipamiento Forestal']
+  'Línea de Producción 1': ['Motor Principal L1', 'Tablero Auxiliar L1'],
+  'Línea de Producción 2': ['Motor Principal L2', 'Tablero Auxiliar L2'],
+  'Cámara de frío': ['Cámara Frigorífica'],
+  'Compresores': ['Compresor A', 'Compresor B'],
+  'Iluminación': ['Iluminación Planta', 'Iluminación Oficinas'],
+  'Calefacción': ['Sistema de Calefacción', 'Calefacción Oficinas'],
+  'Administración': ['Sistemas de Cómputo']
 };
 
 export const SECTOR_LOCATION: Record<string, 'Ushuaia' | 'Río Grande' | 'Tolhuin'> = {
-  'Residencial Ushuaia': 'Ushuaia',
-  'Puerto & Pesca Ushuaia': 'Ushuaia',
-  'Comercio & Hotelería USH': 'Ushuaia',
-  'Residencial Río Grande': 'Río Grande',
-  'Industria Ley 19.640': 'Río Grande',
-  'Comercio RGD': 'Río Grande',
-  'Residencial Tolhuin': 'Tolhuin',
-  'Turismo & Cabañas TLH': 'Tolhuin',
-  'Aserraderos & Madera TLH': 'Tolhuin'
+  'Línea de Producción 1': 'Río Grande',
+  'Línea de Producción 2': 'Río Grande',
+  'Cámara de frío': 'Ushuaia',
+  'Compresores': 'Río Grande',
+  'Iluminación': 'Tolhuin',
+  'Calefacción': 'Ushuaia',
+  'Administración': 'Tolhuin'
 };
 
 export function generateDemoData(): EnergyRecord[] {
@@ -129,8 +123,6 @@ export function generateDemoData(): EnergyRecord[] {
       const hourlyTemp = parseFloat((baseTemp + ((tempMax - tempMin) / 2) * hourFactor + (Math.random() * 1.0 - 0.5)).toFixed(1));
       
       // Determine if it is dark currently
-      // E.g., for 17 hours light, dark is hour < 4 or hour >= 21
-      // For 7 hours light, dark is hour < 9 or hour >= 16
       const halfLight = lightHours / 2;
       const isDark = Math.abs(hour - 12.5) > halfLight;
 
@@ -144,112 +136,88 @@ export function generateDemoData(): EnergyRecord[] {
           let status: 'Operativo' | 'Mantenimiento' | 'Inactivo' = 'Operativo';
 
           switch (equipment) {
-            case 'Consumo Residencial USH': {
-              const baseLoad = 8.5; // kW base
-              const tempDiff = Math.max(0, 10 - hourlyTemp);
-              // Radiadores eléctricos de soporte se encienden en frío
-              const heatingLoad = tempDiff * 1.4 + (extremeEvent === 'Ola de frío polar' ? 7.0 : 0);
-              // Luces encendidas en horas de oscuridad
-              const lightingLoad = isDark ? 2.8 : 0.4;
-              consumption = baseLoad + heatingLoad + lightingLoad + Math.random() * 2.0;
-              break;
-            }
-
-            case 'Cámaras de Congelado Ushuaia': {
-              // Menor consumo en invierno por frío externo. Mayor consumo en verano.
-              const targetTemp = -20;
-              const delta = hourlyTemp - targetTemp;
-              consumption = 18.0 + delta * 0.45 + (extremeEvent === 'Tormenta de nieve' ? 3.0 : 0) + Math.random() * 2.0;
-              break;
-            }
-
-            case 'Calefacción y Luces Hoteleras': {
-              // Dependiente de turismo (Alto en Verano e Invierno, bajo en Otoño/Primavera)
-              let seasonMultiplier = 0.8;
-              if (season === 'Verano') seasonMultiplier = 1.35;
-              if (season === 'Invierno') seasonMultiplier = 1.6;
-
-              const tempDiff = Math.max(0, 18 - hourlyTemp);
-              const heatingLoad = tempDiff * 1.5 + (extremeEvent === 'Ola de frío polar' ? 9.0 : 0);
-              const lightingLoad = isDark ? 3.5 : 0.6;
-              consumption = (6.0 + heatingLoad + lightingLoad) * seasonMultiplier + Math.random() * 2.0;
-              break;
-            }
-
-            case 'Consumo Residencial RGD': {
-              const baseLoad = 9.0;
-              const tempDiff = Math.max(0, 10 - hourlyTemp);
-              const heatingLoad = tempDiff * 1.5 + (extremeEvent === 'Ola de frío polar' ? 8.5 : 0);
-              const lightingLoad = isDark ? 3.0 : 0.5;
-              consumption = baseLoad + heatingLoad + lightingLoad + Math.random() * 2.0;
-              break;
-            }
-
-            case 'Líneas de Ensamblaje Industrial': {
-              // Gran consumo constante en turnos productivos, sin fines de semana.
+            case 'Motor Principal L1':
+            case 'Motor Principal L2': {
               const isWorkingTime = !isWeekend && (shift !== 'Noche');
               if (isWorkingTime) {
                 production = Math.round(60 + Math.random() * 40);
-                // Pérdida de eficiencia en invierno debido a bajas temperaturas de arranque de motores
                 const tempLossMultiplier = hourlyTemp < 0 ? 1.15 : 1.0;
                 consumption = production * 0.42 * tempLossMultiplier + 5.0;
               } else {
                 production = 0;
-                // Standby consum
                 consumption = 3.5 + (extremeEvent === 'Ola de frío polar' ? 3.0 : 0);
                 status = 'Inactivo';
               }
               break;
             }
 
-            case 'Climatización Comercial RGD': {
-              const isOpen = hour >= 8 && hour < 21;
-              if (isOpen) {
-                const tempDiff = Math.max(0, 17 - hourlyTemp);
-                consumption = 8.0 + tempDiff * 1.1 + (extremeEvent === 'Viento extremo' ? 4.0 : 0);
-              } else {
-                consumption = 2.0 + (extremeEvent === 'Ola de frío polar' ? 2.5 : 0);
-                status = 'Inactivo';
-              }
+            case 'Tablero Auxiliar L1':
+            case 'Tablero Auxiliar L2': {
+              const isWorkingTime = !isWeekend && (shift !== 'Noche');
+              consumption = isWorkingTime ? (4.0 + Math.random() * 1.5) : (1.5 + Math.random() * 0.5);
               break;
             }
 
-            case 'Consumo Residencial TLH': {
-              const baseLoad = 5.0;
-              const tempDiff = Math.max(0, 9 - hourlyTemp);
-              const heatingLoad = tempDiff * 1.3 + (extremeEvent === 'Ola de frío polar' ? 5.5 : 0);
-              const lightingLoad = isDark ? 1.8 : 0.3;
-              consumption = baseLoad + heatingLoad + lightingLoad + Math.random() * 1.5;
+            case 'Cámara Frigorífica': {
+              const targetTemp = -20;
+              const delta = hourlyTemp - targetTemp;
+              consumption = 18.0 + delta * 0.45 + (extremeEvent === 'Tormenta de nieve' ? 3.0 : 0) + Math.random() * 2.0;
               break;
             }
 
-            case 'Calefacción Cabañas Tolhuin': {
-              // Estacionalidad de turismo muy marcada
-              let seasonMultiplier = 0.6;
-              if (season === 'Verano') seasonMultiplier = 1.4;
-              if (season === 'Invierno') seasonMultiplier = 1.7;
+            case 'Compresor A': {
+              const isWorkingTime = !isWeekend && (shift !== 'Noche');
+              consumption = isWorkingTime 
+                ? (25.0 + Math.random() * 8.0) 
+                : (5.0 + (extremeEvent === 'Viento extremo' ? 4.0 : 0) + Math.random() * 1.5);
+              if (!isWorkingTime) status = 'Inactivo';
+              break;
+            }
 
+            case 'Compresor B': {
+              const isWorkingTime = !isWeekend && (shift !== 'Noche');
+              consumption = isWorkingTime 
+                ? (12.0 + Math.random() * 4.0) 
+                : (2.0 + Math.random() * 1.0);
+              if (!isWorkingTime) status = 'Inactivo';
+              break;
+            }
+
+            case 'Iluminación Planta': {
+              consumption = isDark ? (15.0 + Math.random() * 3.0) : (2.0 + Math.random() * 0.5);
+              break;
+            }
+
+            case 'Iluminación Oficinas': {
+              const isOpen = hour >= 8 && hour < 20;
+              consumption = (isOpen && isDark) 
+                ? (6.0 + Math.random() * 1.5) 
+                : (0.5 + Math.random() * 0.2);
+              break;
+            }
+
+            case 'Sistema de Calefacción': {
               const tempDiff = Math.max(0, 18 - hourlyTemp);
-              consumption = (4.0 + tempDiff * 1.7 + (extremeEvent === 'Ola de frío polar' ? 6.0 : 0)) * seasonMultiplier + Math.random() * 1.5;
+              const heatingLoad = tempDiff * 2.2 + (extremeEvent === 'Ola de frío polar' ? 12.0 : 0);
+              consumption = 8.0 + heatingLoad + Math.random() * 3.0;
               break;
             }
 
-            case 'Sierras y Equipamiento Forestal': {
-              // Actividad diurna, muy reducida en invierno por congelación de rollizos
-              const isWorkingHours = !isWeekend && (hour >= 8 && hour < 17);
-              if (isWorkingHours) {
-                if (season === 'Invierno') {
-                  // Reducido al 20%
-                  consumption = 4.0 + Math.random() * 2.0;
-                  production = 5;
-                } else {
-                  consumption = 20.0 + Math.random() * 6.0;
-                  production = 25;
-                }
-              } else {
-                consumption = 0.5;
-                status = 'Inactivo';
-              }
+            case 'Calefacción Oficinas': {
+              const isOpen = hour >= 8 && hour < 20;
+              const tempDiff = Math.max(0, 20 - hourlyTemp);
+              const heatingLoad = tempDiff * 1.2 + (extremeEvent === 'Ola de frío polar' ? 6.0 : 0);
+              consumption = isOpen 
+                ? (4.0 + heatingLoad + Math.random() * 1.5) 
+                : (2.0 + (tempDiff * 0.5) + Math.random() * 0.8);
+              break;
+            }
+
+            case 'Sistemas de Cómputo': {
+              const isOpen = hour >= 8 && hour < 20;
+              consumption = isOpen 
+                ? (8.0 + Math.random() * 2.0) 
+                : (2.5 + Math.random() * 0.5);
               break;
             }
 
@@ -258,13 +226,13 @@ export function generateDemoData(): EnergyRecord[] {
           }
 
           // Anomalías inyectadas específicas de la estacionalidad
-          // Anomalía 1: Calefacción hotelera Ushuaia trabada encendida al máximo durante el verano (días 15 a 17)
-          if (equipment === 'Calefacción y Luces Hoteleras' && day >= 15 && day <= 17) {
+          // Anomalía 1: Calefacción de oficinas Ushuaia trabada encendida al máximo durante el verano (días 15 a 17)
+          if (equipment === 'Calefacción Oficinas' && day >= 15 && day <= 17) {
             consumption = consumption * 1.6;
           }
 
-          // Anomalía 2: Fuga térmica en cámaras frigoríficas pesqueras Ushuaia en el pico del invierno por acumulación de hielo (días 75 a 78)
-          if (equipment === 'Cámaras de Congelado Ushuaia' && day >= 75 && day <= 78) {
+          // Anomalía 2: Fuga térmica en cámara frigorífica Ushuaia en el pico del invierno por acumulación de hielo (días 75 a 78)
+          if (equipment === 'Cámara Frigorífica' && day >= 75 && day <= 78) {
             consumption = consumption * 1.35;
           }
 

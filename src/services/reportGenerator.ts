@@ -70,17 +70,17 @@ export function generateMonthlyReportText(records: EnergyRecord[], anomalies: An
 ---
 
 ## 1. RESUMEN DE PROSPECTIVA CLIMÁTICA
-En Tierra del Fuego, las variaciones climáticas ejercen una presión crítica sobre el sistema eléctrico aislado. 
+En Tierra del Fuego, las variaciones climáticas ejercen una presión crítica sobre la planta industrial aislada. 
 - Durante el periodo analizado, el consumo total acumulado fue de **${formatKwh(totalKwh)}**, representando un costo de facturación de **${formatCurrency(totalCost)}**.
-- **Impacto de la Estacionalidad**: El consumo diario promedio en **Invierno** aumentó un **${winterIncreasePct.toFixed(1)}%** respecto a la línea de base de **Verano**, impulsado por temperaturas bajo cero, tormentas de nieve y días extremadamente cortos (promedio de 7 horas de luz solar), lo que forzó la activación prolongada de calefacción eléctrica auxiliar y reflectores de iluminación.
+- **Impacto de la Estacionalidad**: El consumo diario promedio de planta en **Invierno** aumentó un **${winterIncreasePct.toFixed(1)}%** respecto a la línea de base de **Verano**, impulsado por temperaturas bajo cero y días extremadamente cortos (promedio de 7 horas de luz solar), lo que forzó la activación prolongada de calefacción eléctrica de soporte e iluminación de planta.
 
 ---
 
 ## 2. DESGLOSE GEOGRÁFICO Y SECTORIAL
-- **Distribución de Carga por Municipio**:
-  - **Río Grande**: ${formatKwh(locationKwh['Río Grande'])} (Predominancia industrial Ley 19.640)
-  - **Ushuaia**: ${formatKwh(locationKwh['Ushuaia'])} (Consumo hotelero y puerto pesquero)
-  - **Tolhuin**: ${formatKwh(locationKwh['Tolhuin'])} (Cabañas turísticas y aserraderos)
+- **Distribución de Carga por Municipio / Instalaciones**:
+  - **Río Grande**: ${formatKwh(locationKwh['Río Grande'])} (Líneas de Producción 1 y 2, Compresores)
+  - **Ushuaia**: ${formatKwh(locationKwh['Ushuaia'])} (Cámara Frigorífica de congelados y Calefacción)
+  - **Tolhuin**: ${formatKwh(locationKwh['Tolhuin'])} (Alumbrado industrial y sistemas de administración)
 - **Sector Crítico**: El sector de mayor demanda energética en la provincia fue **${topSector ? topSector[0] : 'N/D'}**, con un total de **${formatKwh(topSector ? topSector[1] : 0)}** consumidos.
 
 ---
@@ -89,7 +89,7 @@ En Tierra del Fuego, las variaciones climáticas ejercen una presión crítica s
 Se identificaron **${anomalies.length} anomalías climáticas y operativas**, con **${activeAnoms.length} pendientes** de intervención:
 - **Alertas Críticas:** ${criticalCount} (Acción inmediata requerida para evitar penalidades y sobrecargas)
 - **Alertas Altas:** ${highCount} (Programar resolución durante la semana en curso)
-- **Riesgos Climáticos Extremos**: Durante las olas de frío polar, la activación de calefactores eléctricos de resistencia multiplicó la susceptibilidad de la red, elevando el riesgo financiero.
+- **Riesgos Climáticos Extremos**: Durante las olas de frío polar, el precalentamiento ineficiente de motores principales y el sobreesfuerzo de calefacción por radiadores multiplicó la susceptibilidad de la red, elevando el riesgo financiero.
 
 ---
 
@@ -105,10 +105,10 @@ Tierra del Fuego depende en un 100% de la turbogeneración termoeléctrica local
 ---
 
 ## 5. PLAN DE TRABAJO SUGERIDO (RESILIENCIA PRODUCTIVA)
-1. **Calibración de Termostatos Hoteleros e Industriales**: Ajustar umbrales a 17°C para evitar la activación innecesaria de calefacción eléctrica de apoyo en primavera y verano.
-2. **Desescarche Programado en Cámaras**: Realizar mantenimiento periódico de evaporadores pesqueros en Ushuaia ante la formación acelerada de hielo invernal.
-3. **Control Horario de Luminarias**: Ajustar los horarios de apagado de alumbrado de manera automatizada en base a las horas reales de luz solar mensuales (7 hs en invierno, 17 hs en verano).
-4. **Resguardo de Cabañas y Aberturas**: Mejorar la aislación térmica en las instalaciones turísticas de Tolhuin para limitar las fugas por ráfagas de viento fuertes.
-5. **Apagado Inteligente en Aserraderos**: Ejecutar cortes preventivos de línea ante temporales intensos para resguardar equipamientos y evitar consumos improductivos.
+1. **Calibración de Termostatos en Oficinas**: Ajustar termostatos a 17°C para evitar el sobrecalentamiento innecesario por radiadores eléctricos durante primavera y verano.
+2. **Desescarche Programado en Cámara Frigorífica**: Realizar ciclos de desescarche optimizados en la cámara frigorífica de Ushuaia para prevenir la acumulación acelerada de hielo.
+3. **Control Horario de Alumbrado de Planta**: Programar las luminarias industriales de Tolhuin según el ciclo de luz solar austral real (7 hs de sol en invierno, 17 hs en verano).
+4. **Hermeticidad en el Depósito**: Inspeccionar burletes y aberturas en Tolhuin para limitar las fugas de calor provocadas por ráfagas de viento.
+5. **Apagado Inteligente de Motores en Stand-by**: Detener líneas de producción inactivas en Río Grande en turnos no operativos, evitando el consumo improductivo durante nevadas intensas.
 `;
 }

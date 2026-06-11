@@ -53,8 +53,8 @@ export function detectAnomalies(records: EnergyRecord[]): Anomaly[] {
 
     const key = `${rec.date}_${rec.equipment}`;
 
-    // 1. Summer Heating Anomaly: Calefacción hotelería Ushuaia left ON during summer
-    if (rec.equipment === 'Calefacción y Luces Hoteleras' && rec.season === 'Verano') {
+    // 1. Summer Heating Anomaly: Calefacción Oficinas Ushuaia left ON during summer
+    if (rec.equipment === 'Calefacción Oficinas' && rec.season === 'Verano') {
       const deviationPercent = (rec.consumption_kwh - baseline.avg) / (baseline.avg || 1);
       if (deviationPercent > 0.40 && !detectedKeys.has(key)) {
         detectedKeys.add(key);
@@ -65,16 +65,16 @@ export function detectAnomalies(records: EnergyRecord[]): Anomaly[] {
           equipment: rec.equipment,
           type: 'Sobrecarga de calefacción estacional',
           severity: 'alta',
-          explanation: `Se detectó un consumo inusual de ${rec.consumption_kwh} kWh en calefacción hotelera Ushuaia durante días de verano. Esto es un ${(deviationPercent * 100).toFixed(0)}% superior al promedio estacional de ${baseline.avg.toFixed(1)} kWh, indicando termostatos bloqueados al máximo.`,
-          recommendation: `Verificar la calibración del termostato digital y configurar el apagado forzado del circuito de calefacción eléctrica auxiliar cuando la temperatura externa supere los 8°C.`,
+          explanation: `Se detectó un consumo inusual de ${rec.consumption_kwh} kWh en la Calefacción de Oficinas durante días de verano. Esto es un ${(deviationPercent * 100).toFixed(0)}% superior al promedio estacional de ${baseline.avg.toFixed(1)} kWh, indicando termostatos bloqueados al máximo.`,
+          recommendation: `Verificar la calibración del termostato digital de las oficinas de Ushuaia y configurar el apagado forzado del circuito de calefacción eléctrica auxiliar cuando la temperatura externa supere los 8°C.`,
           resolved: false
         });
         return;
       }
     }
 
-    // 2. Winter Icing / Leak Anomaly: Cámaras frigoríficas in Ushuaia experiencing high winter consumption
-    if (rec.equipment === 'Cámaras de Congelado Ushuaia' && rec.season === 'Invierno') {
+    // 2. Winter Icing / Leak Anomaly: Cámara Frigorífica experiencing high winter consumption
+    if (rec.equipment === 'Cámara Frigorífica' && rec.season === 'Invierno') {
       const deviationPercent = (rec.consumption_kwh - baseline.avg) / (baseline.avg || 1);
       if (deviationPercent > 0.28 && !detectedKeys.has(key)) {
         detectedKeys.add(key);
@@ -85,48 +85,48 @@ export function detectAnomalies(records: EnergyRecord[]): Anomaly[] {
           equipment: rec.equipment,
           type: 'Pérdida por hermeticidad / Escarcha',
           severity: 'critica',
-          explanation: `Las cámaras frigoríficas de pesca registraron un consumo de ${rec.consumption_kwh} kWh (promedio habitual: ${baseline.avg.toFixed(1)} kWh), reflejando un aumento inusual en pleno invierno. Posible acumulación de hielo en evaporadores o fatiga de burletes.`,
-          recommendation: `Programar un desescarche (defrost) de emergencia e inspeccionar burletes y sellos magnéticos de la cámara frigorífica de pesca.`,
+          explanation: `La Cámara Frigorífica registró un consumo de ${rec.consumption_kwh} kWh (promedio habitual: ${baseline.avg.toFixed(1)} kWh), reflejando un aumento inusual en pleno invierno. Posible acumulación de hielo en evaporadores o fatiga de burletes.`,
+          recommendation: `Programar un ciclo de desescarche (defrost) de emergencia e inspeccionar burletes y sellos de la cámara frigorífica en la sede Ushuaia.`,
           resolved: false
         });
         return;
       }
     }
 
-    // 3. Polar Cold Wave Overload: General residential electric space heating spike
+    // 3. Polar Cold Wave Overload: Motor cold startup overload
     if (rec.extreme_event === 'Ola de frío polar') {
       const deviationPercent = (rec.consumption_kwh - baseline.avg) / (baseline.avg || 1);
-      if (deviationPercent > 0.45 && rec.equipment.startsWith('Consumo Residencial') && !detectedKeys.has(key)) {
+      if (deviationPercent > 0.12 && (rec.equipment === 'Motor Principal L1' || rec.equipment === 'Motor Principal L2') && !detectedKeys.has(key)) {
         detectedKeys.add(key);
         anomalies.push({
           id: `anom_coldwave_${rec.date}_${rec.hour}_${rec.equipment.replace(/\s+/g, '')}`,
           timestamp,
           sector: rec.sector,
           equipment: rec.equipment,
-          type: 'Sobrecarga de red por Ola de Frío',
+          type: 'Sobrecarga por arranque en frío polar',
           severity: 'alta',
-          explanation: `El consumo residencial en ${rec.location} se disparó a ${rec.consumption_kwh} kWh debido a la Ola de Frío Polar (${rec.external_temperature}°C), indicando una alta dependencia de calefactores eléctricos de emergencia.`,
-          recommendation: `Emitir alerta comunitaria para fomentar el uso de calefacción a gas natural y evitar el encendido de radiadores eléctricos de alto consumo durante el pico de demanda de 18:00 a 22:00 hs.`,
+          explanation: `El ${rec.equipment} en Río Grande registró un pico de consumo debido al esfuerzo de arranque a temperaturas extremadamente bajas (${rec.external_temperature}°C), lo que incrementa la viscosidad de los lubricantes.`,
+          recommendation: `Implementar precalentadores de cárter para los motores principales de las líneas de producción y programar revisiones de viscosidad de aceite.`,
           resolved: false
         });
         return;
       }
     }
 
-    // 4. Standby consumption in closed sawmills during winter blizzard
-    if (rec.equipment === 'Sierras y Equipamiento Forestal' && rec.extreme_event === 'Tormenta de nieve') {
+    // 4. Standby consumption in closed plant / compressors during extreme wind storms
+    if ((rec.equipment === 'Compresor A' || rec.equipment === 'Compresor B') && rec.extreme_event === 'Viento extremo') {
       const deviationPercent = (rec.consumption_kwh - baseline.avg) / (baseline.avg || 1);
-      if (deviationPercent > 0.35 && !detectedKeys.has(key)) {
+      if (deviationPercent > 0.25 && !detectedKeys.has(key)) {
         detectedKeys.add(key);
         anomalies.push({
-          id: `anom_forest_blizzard_${rec.date}_${rec.hour}`,
+          id: `anom_compressor_leak_${rec.date}_${rec.hour}_${rec.equipment.replace(/\s+/g, '')}`,
           timestamp,
           sector: rec.sector,
           equipment: rec.equipment,
-          type: 'Consumo ineficiente por cese operativo',
+          type: 'Fuga neumática por vibraciones de tormenta',
           severity: 'baja',
-          explanation: `Se detectaron consumos de stand-by inusualmente altos en el aserradero de Tolhuin durante un cese de operaciones por temporal de nieve.`,
-          recommendation: `Asegurar el corte general de tableros eléctricos en aserraderos y aserraderos forestales ante alertas meteorológicas por nevadas intensas.`,
+          explanation: `Se detectó un consumo de stand-by inusualmente alto en el ${rec.equipment} en Río Grande durante un temporal de viento extremo. Las fuertes ráfagas y vibraciones estructurales pueden haber activado fugas en acoples rápidos expuestos.`,
+          recommendation: `Inspeccionar las uniones de la línea de aire comprimido expuestas al viento exterior y sellar fugas detectadas.`,
           resolved: false
         });
         return;
