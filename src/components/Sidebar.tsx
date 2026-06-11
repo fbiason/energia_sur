@@ -10,21 +10,21 @@ import {
   MessageSquareCode,
   FileText,
   Globe,
-  CloudSun
+  LogOut
 } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   anomalyCount: number;
+  onLogout: () => void;
 }
 
-export default function Sidebar({ activeTab, setActiveTab, anomalyCount }: SidebarProps) {
+export default function Sidebar({ activeTab, setActiveTab, anomalyCount, onLogout }: SidebarProps) {
   const menuItems = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
     { id: 'upload', name: 'Carga de Datos', icon: UploadCloud },
     { id: 'analysis', name: 'Análisis de Consumo', icon: TrendingUp },
-    { id: 'seasonal', name: 'Estacionalidad Climática', icon: CloudSun },
     { id: 'anomalies', name: 'Anomalías', icon: AlertTriangle, badge: anomalyCount },
     { id: 'predictions', name: 'Predicciones (7d)', icon: Calendar },
     { id: 'comparator', name: 'Comparador de Eficiencia', icon: BarChart3 },
@@ -103,6 +103,14 @@ export default function Sidebar({ activeTab, setActiveTab, anomalyCount }: Sideb
         <div className="text-[9px] text-slate-600 truncate">
           CWD: IATHON_LOCAL_NODE
         </div>
+        
+        {/* Cerrar Sesión Button */}
+        <button
+          onClick={onLogout}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-bold text-rose-400 hover:bg-rose-950/40 border border-rose-900/30 hover:border-rose-700/50 hover:text-rose-300 transition-all duration-200 mt-3 font-mono uppercase"
+        >
+          <LogOut className="h-3.5 w-3.5" /> Cerrar Sesión
+        </button>
       </div>
     </aside>
   );

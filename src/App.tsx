@@ -10,7 +10,7 @@ import SavingsSimulator from './pages/SavingsSimulator';
 import Assistant from './pages/Assistant';
 import MonthlyReport from './pages/MonthlyReport';
 import ExternalSources from './pages/ExternalSources';
-import SeasonalAnalysis from './pages/SeasonalAnalysis';
+import Login from './pages/Login';
 
 import { EnergyRecord, Anomaly } from './types/energy';
 import { generateDemoData } from './services/demoData';
@@ -18,6 +18,10 @@ import { detectAnomalies } from './services/anomalyDetector';
 import './App.css';
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return sessionStorage.getItem('isAuth') === 'true';
+  });
+
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [records, setRecords] = useState<EnergyRecord[]>([]);
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
@@ -51,6 +55,16 @@ export default function App() {
     setIsSimulated(true);
   }, []);
 
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+    sessionStorage.setItem('isAuth', 'true');
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    sessionStorage.removeItem('isAuth');
+  };
+
   const pendingAnomaliesCount = anomalies.filter(a => !a.resolved).length;
 
   // Render active page component
@@ -76,8 +90,6 @@ export default function App() {
         );
       case 'analysis':
         return <ConsumptionAnalysis records={records} />;
-      case 'seasonal':
-        return <SeasonalAnalysis records={records} anomalies={anomalies} />;
       case 'anomalies':
         return (
           <Anomalies 
@@ -108,6 +120,10 @@ export default function App() {
     }
   };
 
+  if (!isAuthenticated) {
+    return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
+
   return (
     <div className="min-h-screen flex bg-[#090d16] text-slate-100 font-sans">
       {/* Sidebar Navigation */}
@@ -115,6 +131,7 @@ export default function App() {
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         anomalyCount={pendingAnomaliesCount} 
+        onLogout={handleLogout}
       />
       
       {/* Main Content Area */}
