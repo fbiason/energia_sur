@@ -9,7 +9,8 @@ import {
   Calculator,
   MessageSquareCode,
   FileText,
-  Globe
+  Globe,
+  CloudSun
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -23,10 +24,11 @@ export default function Sidebar({ activeTab, setActiveTab, anomalyCount }: Sideb
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
     { id: 'upload', name: 'Carga de Datos', icon: UploadCloud },
     { id: 'analysis', name: 'Análisis de Consumo', icon: TrendingUp },
+    { id: 'seasonal', name: 'Estacionalidad Climática', icon: CloudSun },
     { id: 'anomalies', name: 'Anomalías', icon: AlertTriangle, badge: anomalyCount },
     { id: 'predictions', name: 'Predicciones (7d)', icon: Calendar },
     { id: 'comparator', name: 'Comparador de Eficiencia', icon: BarChart3 },
-    { id: 'simulator', name: 'Simulador de Ahorro', icon: Calculator },
+    { id: 'simulator', name: 'Simulador de Escenarios', icon: Calculator },
     { id: 'assistant', name: 'Asistente EnergIA', icon: MessageSquareCode },
     { id: 'report', name: 'Reporte Mensual', icon: FileText },
     { id: 'sources', name: 'Fuentes de Datos', icon: Globe },

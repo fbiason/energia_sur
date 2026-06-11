@@ -66,11 +66,11 @@ export default function Assistant({ records, anomalies }: AssistantProps) {
   };
 
   const suggestionChips = [
-    '¿Qué equipo consume más?',
-    '¿Qué turno es el menos eficiente?',
-    '¿Cuánto puedo ahorrar un 15%?',
-    '¿Qué equipo debo revisar primero?',
-    '¿Recomendaciones de ahorro?'
+    '¿Cómo impactará el próximo invierno en mis costos?',
+    '¿Cuál es el mes de mayor riesgo energético?',
+    '¿Cuánto debería reducir mi consumo para mantener mis costos actuales?',
+    '¿Qué sectores presentan mayor vulnerabilidad?',
+    '¿Qué recomendaciones climáticas clave debo aplicar?'
   ];
 
   // Helper to format chat message bold texts (**text**) as HTML bold tags

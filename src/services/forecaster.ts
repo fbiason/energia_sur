@@ -24,15 +24,14 @@ export function forecastNext7Days(records: EnergyRecord[]): ForecastResult[] {
   const last7Sum = last7DaysRecords.reduce((sum, r) => sum + r.consumption_kwh, 0);
   const prev7Sum = prev7DaysRecords.reduce((sum, r) => sum + r.consumption_kwh, 0);
 
-  // Growth factor (clamped between -15% and +15% to avoid wild predictions)
+  // Growth factor (clamped to avoid extreme values)
   let trendFactor = 0;
   if (prev7Sum > 0) {
     trendFactor = (last7Sum - prev7Sum) / prev7Sum;
     trendFactor = Math.max(-0.15, Math.min(0.15, trendFactor));
   }
 
-  // Group historical records by day-of-week (0-6) and hour (0-23) to compute averages
-  // We exclude anomalous periods (e.g. days 15-21 Compressor A leak) to make the forecast reflect normal operations + trend
+  // Calculate historical averages by day-of-week and hour
   const seasonalAverages: Record<number, Record<number, { sum: number; count: number }>> = {};
   for (let d = 0; d < 7; d++) {
     seasonalAverages[d] = {};
@@ -43,19 +42,17 @@ export function forecastNext7Days(records: EnergyRecord[]): ForecastResult[] {
 
   records.forEach(r => {
     const d = new Date(`${r.date}T00:00:00`).getDay();
-    // Exclude week 3 compressor leak days 15-21 from baseline averages
-    const isWeek3Leak = r.equipment === 'Compresor A' && r.date >= '2026-05-15' && r.date <= '2026-05-21';
-    
-    if (!isWeek3Leak) {
-      seasonalAverages[d][r.hour].sum += r.consumption_kwh;
-      seasonalAverages[d][r.hour].count += 1;
-    }
+    seasonalAverages[d][r.hour].sum += r.consumption_kwh;
+    seasonalAverages[d][r.hour].count += 1;
   });
 
-  const forecastResults: ForecastResult[] = [];
-  const costBase = records[records.length - 1]?.cost_per_kwh || 45.0;
+  // Calculate historical baseline average temperature in the last 7 days
+  const last7DaysAvgTemp = last7DaysRecords.reduce((sum, r) => sum + r.external_temperature, 0) / (last7DaysRecords.length || 1);
 
-  // Generate next 7 days
+  const forecastResults: ForecastResult[] = [];
+  const costBase = records[records.length - 1]?.cost_per_kwh || 65.0;
+
+  // Generate next 7 days (transitioning from late spring to summer)
   for (let i = 1; i <= 7; i++) {
     const fDate = new Date(lastDate);
     fDate.setDate(lastDate.getDate() + i);
@@ -63,18 +60,32 @@ export function forecastNext7Days(records: EnergyRecord[]): ForecastResult[] {
     const fDayOfWeek = fDate.getDay();
     const isWeekend = fDayOfWeek === 0 || fDayOfWeek === 6;
 
+    // Project weather: getting warmer as summer approaches
+    const tempProj = parseFloat((last7DaysAvgTemp + (i * 0.22) + (Math.random() * 1.5 - 0.75)).toFixed(1));
+    const windProj = Math.round(30 + (Math.random() * 20 - 10)); // Windy spring
+    const lightProj = parseFloat((14.0 + (i * 0.08)).toFixed(1)); // days are lengthening
+
     let dailyKwh = 0;
 
-    // Sum up hourly predictions
+    // Sum up hourly predictions adjusted for climate forecast
     for (let h = 0; h < 24; h++) {
       const seasonal = seasonalAverages[fDayOfWeek][h];
-      let hourlyAvg = seasonal.count > 0 ? (seasonal.sum / seasonal.count) : 10;
+      let hourlyAvg = seasonal.count > 0 ? (seasonal.sum / seasonal.count) : 12;
       
-      // Apply trend growth factor
-      hourlyAvg = hourlyAvg * (1 + trendFactor * (i / 7)); // gradual trend application
+      // 1. Apply trend factor
+      hourlyAvg = hourlyAvg * (1 + trendFactor * (i / 7));
 
-      // Add a tiny random variance (-5% to +5%)
-      hourlyAvg = hourlyAvg * (1 + (Math.random() * 0.1 - 0.05));
+      // 2. Adjust for temperature difference (warmer = less heating, slightly more refrigeration)
+      const tempDiff = tempProj - last7DaysAvgTemp;
+      // Heating saving coefficient (approx 3% reduction per degree Celsius warmer)
+      if (tempDiff > 0) {
+        hourlyAvg = hourlyAvg * (1 - tempDiff * 0.025);
+      } else {
+        hourlyAvg = hourlyAvg * (1 + Math.abs(tempDiff) * 0.025);
+      }
+
+      // 3. Add random noise (-3% to +3%)
+      hourlyAvg = hourlyAvg * (1 + (Math.random() * 0.06 - 0.03));
 
       dailyKwh += hourlyAvg;
     }
@@ -82,27 +93,31 @@ export function forecastNext7Days(records: EnergyRecord[]): ForecastResult[] {
     // Cost estimation
     const costEstimated = dailyKwh * costBase;
 
-    // Risk assessment based on trend and weekends
+    // Risk assessment based on trend, wind and weekends
     let risk_level: 'bajo' | 'medio' | 'alto' = 'bajo';
-    if (trendFactor > 0.05 && !isWeekend) {
+    if (trendFactor > 0.04 || windProj > 42) {
       risk_level = 'alto';
-    } else if (trendFactor > 0.01 || (isWeekend && dailyKwh > 500)) {
+    } else if (trendFactor > 0.01 || isWeekend) {
       risk_level = 'medio';
     }
 
     // Determine recommendations
     const recommendations: string[] = [];
     if (isWeekend) {
-      recommendations.push("Fin de semana: Asegurar apagado total de sistemas administrativos y climatización secundaria.");
+      recommendations.push("Fin de semana: Desactivar calefactores de soporte en oficinas y aserraderos.");
     } else {
-      recommendations.push("Monitorear picos en el turno tarde. Si es viable, secuenciar el arranque de motores grandes.");
+      recommendations.push("Optimizar horarios de sierras en Tolhuin para aprovechar las horas de luz máxima.");
     }
-    
-    if (trendFactor > 0.03) {
-      recommendations.push(`Tendencia alcista activa (+${(trendFactor * 100).toFixed(1)}%). Inspeccionar el Motor Principal L1 por desgaste.`);
-    } else {
-      recommendations.push("Mantener configuraciones de termostatos actuales para consolidar ahorro.");
+
+    if (tempProj > 8.0) {
+      recommendations.push(`Calentamiento estacional a ${tempProj}°C: Apagar sistemas de calefacción auxiliar de comercios.`);
     }
+
+    if (windProj > 40) {
+      recommendations.push(`Ráfagas proyectadas de ${windProj} km/h: Revisar hermeticidad de aberturas para evitar pérdidas de calor.`);
+    }
+
+    recommendations.push(`Aprovechar horas de luz diurna (${lightProj} hs) para reprogramar encendido de reflectores externos.`);
 
     forecastResults.push({
       date: fDateStr,
@@ -150,8 +165,8 @@ export function getForecastChartData(records: EnergyRecord[], forecast: Forecast
       date: f.date,
       predicted: base,
       // 5% margin of error for visualization shadow bands
-      lowerBound: parseFloat((base * 0.94).toFixed(1)),
-      upperBound: parseFloat((base * 1.06).toFixed(1))
+      lowerBound: parseFloat((base * 0.95).toFixed(1)),
+      upperBound: parseFloat((base * 1.05).toFixed(1))
     });
   });
 

@@ -1,6 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { EnergyRecord } from '../types/energy';
-import { Calculator, Leaf, Trees, DollarSign, Calendar } from 'lucide-react';
+import { 
+  Calculator, 
+  DollarSign, 
+  FileText, 
+  Copy, 
+  Check, 
+  TrendingUp, 
+  Sliders
+} from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -9,8 +17,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  AreaChart,
-  Area,
   Cell
 } from 'recharts';
 
@@ -19,318 +25,483 @@ interface SavingsSimulatorProps {
 }
 
 export default function SavingsSimulator({ records }: SavingsSimulatorProps) {
-  
-  // Calculate defaults from active dataset
+  const [copied, setCopied] = useState<boolean>(false);
+
+  // Calculate default monthly consumption from active records
   const defaults = useMemo(() => {
     if (records.length === 0) {
-      return { kwh: 12500, cost: 45.0 };
+      return { kwh: 15000, cost: 65.0 };
     }
     
-    // Monthly average
-    const totalKwh = records.reduce((sum, r) => sum + r.consumption_kwh, 0);
-    const uniqueDates = Array.from(new Set(records.map(r => r.date)));
-    const monthsCount = Math.max(1, uniqueDates.length / 30);
-    const monthlyAvgKwh = Math.round(totalKwh / monthsCount);
+    // Group consumption by date to find daily totals, then extrapolate monthly
+    const dailyMap: Record<string, number> = {};
+    records.forEach(r => {
+      dailyMap[r.date] = (dailyMap[r.date] || 0) + r.consumption_kwh;
+    });
+
+    const dailyValues = Object.values(dailyMap);
+    const avgDailyKwh = dailyValues.reduce((sum, v) => sum + v, 0) / (dailyValues.length || 1);
+    const monthlyKwh = Math.round(avgDailyKwh * 30);
     
-    const rate = records[0]?.cost_per_kwh || 45.0;
+    const baseCost = records[0]?.cost_per_kwh || 65.0;
 
     return {
-      kwh: monthlyAvgKwh,
-      cost: rate
+      kwh: monthlyKwh,
+      cost: baseCost
     };
   }, [records]);
 
-  // Sliders state
-  const [monthlyKwh, setMonthlyKwh] = useState<number>(defaults.kwh);
-  const [ratePerKwh, setRatePerKwh] = useState<number>(defaults.cost);
-  const [reductionPct, setReductionPct] = useState<number>(12); // Default 12%
-  const [monthsCount, setMonthsCount] = useState<number>(12); // Default 12 months
+  // Input states
+  const [baselineKwh, setBaselineKwh] = useState<number>(defaults.kwh);
+  const [baseTariff, setBaseTariff] = useState<number>(defaults.cost);
 
-  // Recalculate if active dataset changes
+  // Trigger state update if defaults change
   /* eslint-disable react-hooks/set-state-in-effect */
   React.useEffect(() => {
-    setMonthlyKwh(defaults.kwh);
-    setRatePerKwh(defaults.cost);
+    setBaselineKwh(defaults.kwh);
+    setBaseTariff(defaults.cost);
   }, [defaults]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  // Calculations
-  const calc = useMemo(() => {
-    const currentBill = monthlyKwh * ratePerKwh;
-    
-    const monthlySavedKwh = monthlyKwh * (reductionPct / 100);
-    const monthlySavedCost = currentBill * (reductionPct / 100);
+  // Define Scenarios Math
+  const scenarios = useMemo(() => {
+    // Escenario A: Subsidio actual + invierno promedio
+    const kwhA = Math.round(baselineKwh * 1.0);
+    const tariffA = baseTariff; // Tarifa actual subsidiada
+    const costMonthlyA = kwhA * tariffA;
+    const costAnnualA = costMonthlyA * 12;
+    const vulnerabilityA = 22; // Bajo
 
-    const projectedBill = currentBill - monthlySavedCost;
+    // Escenario B: Reducción del 50% del subsidio + invierno severo
+    const kwhB = Math.round(baselineKwh * 1.25); // +25% heating load
+    const tariffB = baseTariff * 2.0; // 50% cut doubles tariff
+    const costMonthlyB = kwhB * tariffB;
+    const costAnnualB = costMonthlyB * 12;
+    const increaseB = ((costMonthlyB - costMonthlyA) / costMonthlyA) * 100;
+    const vulnerabilityB = 62; // Alto
 
-    const accumulatedSavedKwh = monthlySavedKwh * monthsCount;
-    const accumulatedSavedCost = monthlySavedCost * monthsCount;
+    // Escenario C: Eliminación de subsidio + invierno extremo
+    const kwhC = Math.round(baselineKwh * 1.50); // +50% heating load (emergency radiadores)
+    const tariffC = baseTariff * 4.0; // 100% cut quadruples tariff
+    const costMonthlyC = kwhC * tariffC;
+    const costAnnualC = costMonthlyC * 12;
+    const increaseC = ((costMonthlyC - costMonthlyA) / costMonthlyA) * 100;
+    const vulnerabilityC = 95; // Crítico
 
-    const annualSavedKwh = monthlySavedKwh * 12;
-    const annualSavedCost = monthlySavedCost * 12;
-
-    // Environmental Impact
-    // Argentine grid emissions factor ~ 0.4 kg CO2 per kWh
-    const co2SavedKg = accumulatedSavedKwh * 0.4;
-    // One mature tree absorbs ~20 kg CO2 per year
-    const equivalentTrees = co2SavedKg / 20;
-
-    // Before/After Chart Data
-    const beforeAfterData = [
-      { name: 'Factura Actual', Costo: Math.round(currentBill) },
-      { name: 'Factura Optimizada', Costo: Math.round(projectedBill) }
+    return [
+      {
+        id: 'A',
+        name: 'Escenario A',
+        desc: 'Subsidio actual + invierno promedio',
+        kwh: kwhA,
+        tariff: tariffA,
+        costMonthly: costMonthlyA,
+        costAnnual: costAnnualA,
+        increase: 0,
+        vulnerability: vulnerabilityA,
+        risk: 'Bajo',
+        riskColor: 'text-emerald-400 bg-emerald-950/40 border-emerald-800/40',
+        gaugeColor: '#10b981'
+      },
+      {
+        id: 'B',
+        name: 'Escenario B',
+        desc: 'Reducción 50% subsidio + invierno severo',
+        kwh: kwhB,
+        tariff: tariffB,
+        costMonthly: costMonthlyB,
+        costAnnual: costAnnualB,
+        increase: increaseB,
+        vulnerability: vulnerabilityB,
+        risk: 'Alto',
+        riskColor: 'text-orange-400 bg-orange-950/40 border-orange-850/40',
+        gaugeColor: '#ea580c'
+      },
+      {
+        id: 'C',
+        name: 'Escenario C',
+        desc: 'Eliminación subsidio + invierno extremo',
+        kwh: kwhC,
+        tariff: tariffC,
+        costMonthly: costMonthlyC,
+        costAnnual: costAnnualC,
+        increase: increaseC,
+        vulnerability: vulnerabilityC,
+        risk: 'Crítico',
+        riskColor: 'text-rose-400 bg-rose-950/40 border-rose-800/40',
+        gaugeColor: '#f43f5e'
+      }
     ];
+  }, [baselineKwh, baseTariff]);
 
-    // Cumulative savings chart data
-    const cumulativeChartData = [];
-    let runningSum = 0;
-    for (let m = 1; m <= monthsCount; m++) {
-      runningSum += monthlySavedCost;
-      cumulativeChartData.push({
-        Mes: `Mes ${m}`,
-        Ahorro: Math.round(runningSum)
-      });
-    }
+  const chartData = useMemo(() => {
+    return scenarios.map(sc => ({
+      name: sc.name,
+      'Costo Mensual': Math.round(sc.costMonthly),
+      'Consumo Proyectado': sc.kwh
+    }));
+  }, [scenarios]);
 
-    return {
-      currentBill,
-      projectedBill,
-      monthlySavedKwh,
-      monthlySavedCost,
-      accumulatedSavedKwh,
-      accumulatedSavedCost,
-      annualSavedKwh,
-      annualSavedCost,
-      co2SavedKg,
-      equivalentTrees,
-      beforeAfterData,
-      cumulativeChartData
-    };
-  }, [monthlyKwh, ratePerKwh, reductionPct, monthsCount]);
-
+  // Helpers
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(val);
   };
 
   const formatKwh = (val: number) => {
-    return `${Math.round(val).toLocaleString('es-AR')} kWh`;
+    return `${val.toLocaleString('es-AR')} kWh`;
+  };
+
+  // Compile Executive Report Markdown
+  const reportText = useMemo(() => {
+    const todayStr = new Date().toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' });
+    const scA = scenarios[0];
+    const scB = scenarios[1];
+    const scC = scenarios[2];
+
+    return `# REPORTE DE ESCENARIOS TARIFARIOS Y PROSPECTIVA CLIMÁTICA
+**Plataforma EnergIA Sur**  
+*Fecha: ${todayStr}*  
+*Instalación: Tierra del Fuego / Consumo de Base: ${formatKwh(baselineKwh)}*
+
+---
+
+## 1. INTRODUCCIÓN Y CONTEXTO
+Este reporte evalúa la vulnerabilidad del consumo energético de la instalación ante dos variables combinadas: la reducción gradual de subsidios eléctricos y la severidad térmica invernal en Tierra del Fuego (sistema aislado).
+
+---
+
+## 2. ANÁLISIS DE ESCENARIOS
+
+### ESCENARIO A: Línea de Base (Invierno Promedio + Subsidio Actual)
+- **Consumo proyectado:** ${formatKwh(scA.kwh)}
+- **Tarifa aplicada:** ${formatCurrency(scA.tariff)}/kWh
+- **Costo mensual estimado:** ${formatCurrency(scA.costMonthly)}
+- **Costo anual estimado:** ${formatCurrency(scA.costAnnual)}
+- **Índice de Vulnerabilidad:** ${scA.vulnerability}/100 (Riesgo: ${scA.risk})
+
+### ESCENARIO B: Riesgo Alto (Invierno Severo + 50% Quita de Subsidio)
+- **Consumo proyectado:** ${formatKwh(scB.kwh)} (+25% por calefacción de soporte)
+- **Tarifa aplicada:** ${formatCurrency(scB.tariff)}/kWh
+- **Costo mensual estimado:** ${formatCurrency(scB.costMonthly)}
+- **Costo anual estimado:** ${formatCurrency(scB.costAnnual)}
+- **Incremento de costos:** +${scB.increase.toFixed(0)}%
+- **Índice de Vulnerabilidad:** ${scB.vulnerability}/100 (Riesgo: ${scB.risk})
+
+### ESCENARIO C: Riesgo Crítico (Invierno Extremo + 100% Quita de Subsidio)
+- **Consumo proyectado:** ${formatKwh(scC.kwh)} (+50% por radiadores de emergencia ante frío extremo)
+- **Tarifa aplicada:** ${formatCurrency(scC.tariff)}/kWh
+- **Costo mensual estimado:** ${formatCurrency(scC.costMonthly)}
+- **Costo anual estimado:** ${formatCurrency(scC.costAnnual)}
+- **Incremento de costos:** +${scC.increase.toFixed(0)}%
+- **Índice de Vulnerabilidad:** ${scC.vulnerability}/100 (Riesgo: ${scC.risk})
+
+---
+
+## 3. IMPACTO AMBIENTAL ESTIMADO
+La generación termoeléctrica local por turbinas de gas natural en Tierra del Fuego tiene un factor de emisión de **0.37 kg CO2/kWh**.
+- **Escenario A**: ${(scA.kwh * 0.37 / 1000).toFixed(2)} tCO2 mensuales (${((scA.kwh * 0.37 * 12) / 1000).toFixed(1)} tCO2 anuales).
+- **Escenario C**: ${(scC.kwh * 0.37 / 1000).toFixed(2)} tCO2 mensuales (${((scC.kwh * 0.37 * 12) / 1000).toFixed(1)} tCO2 anuales).
+- **Reducción Recomendada**: Implementar eficiencia pasiva de calefacción (aislación térmica) permite mitigar el consumo residencial e industrial en hasta un **20%**, reduciendo las emisiones equivalentes en **${((scC.kwh * 0.20 * 0.37 * 12) / 1000).toFixed(1)} tCO2** anuales en el escenario más severo.
+
+---
+
+## 4. RECOMENDACIONES ESTRATÉGICAS
+1. **Transición a Sistemas de Calefacción a Gas**: Evitar el soporte de radiadores eléctricos de resistencia, ya que multiplican el consumo por 4 en días fríos.
+2. **Hermeticidad Estructural (Aberturas)**: Instalar doble vidriado (DVH) y burletes para aislar ráfagas de viento y conservar el calor interno.
+3. **Corte y Standby Preventivo**: Desconectar totalmente equipamientos auxiliares que queden en standby durante días de tormenta extrema.
+`;
+  }, [baselineKwh, scenarios]);
+
+  const handleCopyReport = async () => {
+    try {
+      await navigator.clipboard.writeText(reportText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Error al copiar el reporte: ', err);
+    }
+  };
+
+  // Mini gauge math for cards
+  const renderMiniGauge = (score: number, color: string) => {
+    const r = 35;
+    const w = 6;
+    const circ = Math.PI * r;
+    const offset = circ - (score / 100) * circ;
+    const rot = (score / 100) * 180 - 90;
+
+    return (
+      <div className="relative w-20 h-11 flex items-center justify-center mt-2">
+        <svg className="w-full h-full" viewBox="0 0 80 45">
+          <path
+            d="M 5 40 A 35 35 0 0 1 75 40"
+            fill="none"
+            stroke="#1e293b"
+            strokeWidth={w}
+            strokeLinecap="round"
+          />
+          <path
+            d="M 5 40 A 35 35 0 0 1 75 40"
+            fill="none"
+            stroke={color}
+            strokeWidth={w}
+            strokeLinecap="round"
+            strokeDasharray={circ}
+            strokeDashoffset={offset}
+          />
+          <circle cx="40" cy="40" r="3.5" fill="#f8fafc" />
+          <line
+            x1="40"
+            y1="40"
+            x2="40"
+            y2="10"
+            stroke="#f8fafc"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            style={{
+              transform: `rotate(${rot}deg)`,
+              transformOrigin: '40px 40px',
+              transition: 'transform 1s'
+            }}
+          />
+        </svg>
+      </div>
+    );
   };
 
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div>
-        <h2 className="text-3xl font-extrabold text-white tracking-tight">Simulador de Ahorro</h2>
-        <p className="text-slate-400 mt-1">
-          Ajuste los parámetros para proyectar el retorno de inversión y el impacto ecológico de las medidas de eficiencia.
-        </p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-3xl font-extrabold text-white tracking-tight">Simulador de Escenarios Inteligentes</h2>
+          <p className="text-slate-400 mt-1">
+            Combinación de variaciones tarifarias por quita de subsidios y variaciones climáticas por severidad invernal.
+          </p>
+        </div>
       </div>
 
-      {/* Simulator Inputs & ROI Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Simulator Inputs Controls */}
+      <div className="glass-panel p-6 rounded-2xl border border-slate-850 bg-slate-900/30 grid grid-cols-1 md:grid-cols-2 gap-8">
         
-        {/* Sliders Control Panel */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-6 lg:col-span-1">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <Calculator className="h-5 w-5 text-cyan-400" /> Parámetros del Proyecto
+        {/* Input 1: Baseline Monthly kWh */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <label className="text-xs font-bold uppercase tracking-wider font-mono text-slate-400 flex items-center gap-1.5">
+              <Sliders className="h-4 w-4 text-cyan-400" /> Consumo Mensual Base
+            </label>
+            <span className="text-sm font-bold font-mono text-white bg-slate-950 border border-slate-900 px-3 py-1 rounded-xl">
+              {formatKwh(baselineKwh)}
+            </span>
+          </div>
+          <input
+            type="range"
+            min="2000"
+            max="120000"
+            step="500"
+            value={baselineKwh}
+            onChange={(e) => setBaselineKwh(parseInt(e.target.value, 10))}
+            className="w-full h-1.5 rounded-lg bg-slate-950 appearance-none cursor-pointer accent-cyan-500"
+          />
+          <div className="flex justify-between text-[10px] font-mono text-slate-600">
+            <span>2.000 kWh</span>
+            <span>120.000 kWh</span>
+          </div>
+        </div>
+
+        {/* Input 2: Base Subsidized Tariff */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <label className="text-xs font-bold uppercase tracking-wider font-mono text-slate-400 flex items-center gap-1.5">
+              <DollarSign className="h-4 w-4 text-cyan-400" /> Tarifa Subsidiada Base
+            </label>
+            <span className="text-sm font-bold font-mono text-white bg-slate-950 border border-slate-900 px-3 py-1 rounded-xl">
+              {formatCurrency(baseTariff)}/kWh
+            </span>
+          </div>
+          <input
+            type="range"
+            min="10"
+            max="180"
+            step="1"
+            value={baseTariff}
+            onChange={(e) => setBaseTariff(parseFloat(e.target.value))}
+            className="w-full h-1.5 rounded-lg bg-slate-950 appearance-none cursor-pointer accent-cyan-500"
+          />
+          <div className="flex justify-between text-[10px] font-mono text-slate-600">
+            <span>$10 / kWh</span>
+            <span>$180 / kWh</span>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Scenario Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {scenarios.map(sc => (
+          <div 
+            key={sc.id}
+            className="glass-panel p-5 rounded-2xl border border-slate-850 bg-slate-900/15 flex flex-col justify-between space-y-4 hover:border-slate-700 transition-all duration-300 relative overflow-hidden"
+          >
+            {/* Header */}
+            <div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold uppercase tracking-wider font-mono text-slate-500">{sc.name}</span>
+                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${sc.riskColor}`}>
+                  Riesgo {sc.risk}
+                </span>
+              </div>
+              <h4 className="text-sm font-bold text-white mt-1.5">{sc.desc}</h4>
+            </div>
+
+            {/* Calculations metrics */}
+            <div className="space-y-2.5 pt-2 border-t border-slate-900">
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-400">Consumo Proyectado:</span>
+                <span className="font-mono font-bold text-white">{formatKwh(sc.kwh)}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-400">Tarifa Equivalente:</span>
+                <span className="font-mono font-bold text-white">{formatCurrency(sc.tariff)}/kWh</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-400">Costo Estimado Mensual:</span>
+                <span className="font-mono font-bold text-cyan-400">{formatCurrency(sc.costMonthly)}</span>
+              </div>
+              <div className="flex justify-between text-xs border-t border-slate-900/60 pt-2.5">
+                <span className="text-slate-400">Costo Estimado Anual:</span>
+                <span className="font-mono font-bold text-white">{formatCurrency(sc.costAnnual)}</span>
+              </div>
+              {sc.increase > 0 && (
+                <div className="flex justify-between text-xs text-rose-400 font-bold font-mono">
+                  <span>Incremento sobre A:</span>
+                  <span>+{sc.increase.toFixed(0)}%</span>
+                </div>
+              )}
+            </div>
+
+            {/* Speedometer Gauge indicator */}
+            <div className="flex flex-col items-center border-t border-slate-900 pt-3">
+              <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider">Índice de Vulnerabilidad</span>
+              {renderMiniGauge(sc.vulnerability, sc.gaugeColor)}
+              <span className="text-xs font-bold text-white font-mono mt-1">{sc.vulnerability}/100</span>
+            </div>
+
+          </div>
+        ))}
+      </div>
+
+      {/* Charts & Scenario Table */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Table Comparison */}
+        <div className="glass-panel p-6 rounded-2xl border border-slate-850 bg-slate-900/10 lg:col-span-2 space-y-4">
+          <h3 className="text-base font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
+            <Calculator className="h-4.5 w-4.5 text-cyan-400" /> Tabla Comparativa de Prospectiva
           </h3>
 
-          {/* Consumption Slider */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs font-mono">
-              <span className="text-slate-500">CONSUMO MENSUAL</span>
-              <span className="text-cyan-400 font-bold">{formatKwh(monthlyKwh)}</span>
-            </div>
-            <input
-              type="range"
-              min={1000}
-              max={150000}
-              step={500}
-              value={monthlyKwh}
-              onChange={(e) => setMonthlyKwh(parseInt(e.target.value, 10))}
-              className="w-full accent-cyan-500 bg-slate-900 h-1.5 rounded-lg cursor-pointer"
-            />
-            <div className="flex justify-between text-[10px] text-slate-600 font-mono">
-              <span>1k kWh</span>
-              <span>150k kWh</span>
-            </div>
-          </div>
-
-          {/* Tariff Slider */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs font-mono">
-              <span className="text-slate-500">TARIFA POR kWh</span>
-              <span className="text-cyan-400 font-bold">{formatCurrency(ratePerKwh)}</span>
-            </div>
-            <input
-              type="range"
-              min={10}
-              max={150}
-              step={1}
-              value={ratePerKwh}
-              onChange={(e) => setRatePerKwh(parseFloat(e.target.value))}
-              className="w-full accent-cyan-500 bg-slate-900 h-1.5 rounded-lg cursor-pointer"
-            />
-            <div className="flex justify-between text-[10px] text-slate-600 font-mono">
-              <span>AR$ 10</span>
-              <span>AR$ 150</span>
-            </div>
-          </div>
-
-          {/* Target reduction % Slider */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs font-mono">
-              <span className="text-slate-500">OBJETIVO DE REDUCCIÓN</span>
-              <span className="text-emerald-400 font-bold">{reductionPct}%</span>
-            </div>
-            <input
-              type="range"
-              min={1}
-              max={50}
-              step={1}
-              value={reductionPct}
-              onChange={(e) => setReductionPct(parseInt(e.target.value, 10))}
-              className="w-full accent-emerald-500 bg-slate-900 h-1.5 rounded-lg cursor-pointer"
-            />
-            <div className="flex justify-between text-[10px] text-slate-600 font-mono">
-              <span>1% (Básico)</span>
-              <span>50% (Teórico)</span>
-            </div>
-          </div>
-
-          {/* Period months Slider */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs font-mono">
-              <span className="text-slate-500">PLAZO DE EVALUACIÓN</span>
-              <span className="text-violet-400 font-bold">{monthsCount} Meses</span>
-            </div>
-            <input
-              type="range"
-              min={1}
-              max={24}
-              step={1}
-              value={monthsCount}
-              onChange={(e) => setMonthsCount(parseInt(e.target.value, 10))}
-              className="w-full accent-violet-500 bg-slate-900 h-1.5 rounded-lg cursor-pointer"
-            />
-            <div className="flex justify-between text-[10px] text-slate-600 font-mono">
-              <span>1 Mes</span>
-              <span>2 Años</span>
-            </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-900 text-[10px] font-mono uppercase text-slate-500 tracking-wider">
+                  <th className="py-3 px-2">Escenario</th>
+                  <th className="py-3 px-2 text-right">Consumo (kWh)</th>
+                  <th className="py-3 px-2 text-right">Tarifa ($)</th>
+                  <th className="py-3 px-2 text-right">Costo Mensual</th>
+                  <th className="py-3 px-2 text-right">Costo Anual</th>
+                  <th className="py-3 px-2 text-right">Vulnerabilidad</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-900/60 text-xs">
+                {scenarios.map(sc => (
+                  <tr key={sc.id} className="hover:bg-slate-900/20 transition-all">
+                    <td className="py-3 px-2 font-bold text-white flex flex-col">
+                      <span>{sc.name}</span>
+                      <span className="text-[10px] text-slate-500 font-normal">{sc.desc.split(' + ')[1]}</span>
+                    </td>
+                    <td className="py-3 px-2 text-right font-mono font-semibold text-slate-300">{formatKwh(sc.kwh)}</td>
+                    <td className="py-3 px-2 text-right font-mono font-semibold text-slate-300">{formatCurrency(sc.tariff)}</td>
+                    <td className="py-3 px-2 text-right font-mono font-bold text-cyan-400">{formatCurrency(sc.costMonthly)}</td>
+                    <td className="py-3 px-2 text-right font-mono font-bold text-slate-300">{formatCurrency(sc.costAnnual)}</td>
+                    <td className="py-3 px-2 text-right font-mono font-bold">
+                      <span className={`px-2 py-0.5 rounded text-[10px] border ${sc.riskColor}`}>
+                        {sc.vulnerability} ({sc.risk})
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {/* Projections & Carbon footprint */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* Cost projection chart */}
+        <div className="glass-panel p-6 rounded-2xl border border-slate-850 bg-slate-900/10 space-y-4">
+          <h3 className="text-base font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
+            <TrendingUp className="h-4.5 w-4.5 text-cyan-400" /> Costo Mensual Proyectado (AR$)
+          </h3>
+
+          <div className="h-60 w-full pt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 10, right: 0, left: -10, bottom: 0 }}>
+                <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" stroke="#475569" style={{ fontSize: 9, fontFamily: 'monospace' }} tickLine={false} />
+                <YAxis stroke="#475569" style={{ fontSize: 9, fontFamily: 'monospace' }} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#020617', borderColor: '#1e293b', borderRadius: '12px' }}
+                  formatter={(value: unknown) => [formatCurrency(value as number), "Costo Mensual"]}
+                />
+                <Bar dataKey="Costo Mensual" radius={[4, 4, 0, 0]}>
+                  {chartData.map((entry, index) => {
+                    const colors = ['#10b981', '#ea580c', '#f43f5e'];
+                    return <Cell key={`cell-${index}`} fill={colors[index] || '#06b6d4'} />;
+                  })}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Executive Report Module */}
+      <div className="glass-panel p-6 rounded-2xl border border-slate-850 bg-slate-900/10 space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <FileText className="h-5 w-5 text-cyan-400" /> Reporte de Prospectiva Tarifaria y Escenarios
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">
+              Compila y exporta la evaluación de riesgos combinados para la toma de decisiones estratégicas.
+            </p>
+          </div>
           
-          {/* Main Calculation Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
-            {/* Economic Saving */}
-            <div className="glass-panel p-5 rounded-2xl border border-slate-800 bg-slate-900/40 flex items-start gap-4">
-              <div className="p-3.5 rounded-xl bg-cyan-950 text-cyan-400 border border-cyan-800/40">
-                <DollarSign className="h-6 w-6" />
-              </div>
-              <div className="space-y-1">
-                <span className="text-[10px] text-slate-500 font-mono uppercase">Ahorro Mensual Estimado</span>
-                <h4 className="text-2xl font-bold font-mono text-white">{formatCurrency(calc.monthlySavedCost)}</h4>
-                <p className="text-xxs text-slate-400">
-                  Equivalente a <strong className="text-slate-200">{formatKwh(calc.monthlySavedKwh)}</strong> no consumidos
-                </p>
-              </div>
-            </div>
+          <button 
+            onClick={handleCopyReport}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 ${
+              copied 
+                ? 'bg-emerald-500 text-slate-950 border-emerald-400' 
+                : 'bg-slate-950 text-slate-300 border-slate-800 hover:bg-slate-900 hover:text-white'
+            }`}
+          >
+            {copied ? (
+              <>
+                <Check className="h-4 w-4" /> ¡Reporte Copiado!
+              </>
+            ) : (
+              <>
+                <Copy className="h-4 w-4" /> Copiar Reporte MD
+              </>
+            )}
+          </button>
+        </div>
 
-            {/* Accumulated saving */}
-            <div className="glass-panel p-5 rounded-2xl border border-slate-800 bg-slate-900/40 flex items-start gap-4">
-              <div className="p-3.5 rounded-xl bg-violet-950 text-violet-400 border border-violet-800/40">
-                <Calendar className="h-6 w-6" />
-              </div>
-              <div className="space-y-1">
-                <span className="text-[10px] text-slate-500 font-mono uppercase">Acumulado a {monthsCount} meses</span>
-                <h4 className="text-2xl font-bold font-mono text-cyan-400">{formatCurrency(calc.accumulatedSavedCost)}</h4>
-                <p className="text-xxs text-slate-400">
-                  Total de energía evitada: <strong className="text-slate-200 font-mono">{formatKwh(calc.accumulatedSavedKwh)}</strong>
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Environmental Equivalents */}
-          <div className="glass-panel p-5 rounded-2xl border border-emerald-500/20 bg-emerald-950/5 grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-emerald-950 text-emerald-400 border border-emerald-800/40 shrink-0">
-                <Leaf className="h-6 w-6" />
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-500 font-mono uppercase">Huella de CO2 Evitada</span>
-                <h5 className="text-lg font-bold text-white mt-0.5 font-mono">
-                  {(calc.co2SavedKg / 1000).toFixed(2)} toneladas
-                </h5>
-                <p className="text-xxs text-slate-400 mt-0.5">Emisiones de gases de efecto invernadero reducidas.</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-emerald-950 text-emerald-400 border border-emerald-800/40 shrink-0">
-                <Trees className="h-6 w-6" />
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-500 font-mono uppercase">Equivalente de Reforestación</span>
-                <h5 className="text-lg font-bold text-white mt-0.5 font-mono">
-                  {Math.round(calc.equivalentTrees).toLocaleString()} Árboles
-                </h5>
-                <p className="text-xxs text-slate-400 mt-0.5">Árboles maduros absorbiendo carbono durante un año completo.</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Savings Charts Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-            
-            {/* Before / After */}
-            <div className="md:col-span-2 glass-panel p-4 rounded-xl border border-slate-900 flex flex-col justify-between">
-              <span className="text-xxs text-slate-500 font-mono uppercase block pb-3">Comparativo de Facturación</span>
-              <div className="h-44 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={calc.beforeAfterData} margin={{ top: 5, right: 0, left: -20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
-                    <XAxis dataKey="name" stroke="#64748b" tickLine={false} style={{ fontSize: 9 }} />
-                    <YAxis stroke="#64748b" tickLine={false} style={{ fontSize: 9 }} />
-                    <Tooltip formatter={(value) => [formatCurrency(Number(value)), 'Costo']} />
-                    <Bar dataKey="Costo" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={35}>
-                      <Cell fill="#f43f5e" />
-                      <Cell fill="#10b981" />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Cumulative Line */}
-            <div className="md:col-span-3 glass-panel p-4 rounded-xl border border-slate-900 flex flex-col justify-between">
-              <span className="text-xxs text-slate-500 font-mono uppercase block pb-3">Evolución de Ahorro Acumulado</span>
-              <div className="h-44 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={calc.cumulativeChartData} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
-                    <defs>
-                      <linearGradient id="colorSimulator" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
-                    <XAxis dataKey="Mes" stroke="#64748b" tickLine={false} style={{ fontSize: 9 }} />
-                    <YAxis stroke="#64748b" tickLine={false} style={{ fontSize: 9 }} />
-                    <Tooltip formatter={(value) => [formatCurrency(Number(value)), 'Ahorro Acumulado']} />
-                    <Area type="monotone" dataKey="Ahorro" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorSimulator)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
+        {/* MD Content Preview Mockup */}
+        <div className="bg-slate-950/80 border border-slate-900 rounded-xl p-5 font-mono text-[11px] text-slate-400 max-h-56 overflow-y-auto scrollbar-thin space-y-2 whitespace-pre-wrap leading-relaxed">
+          {reportText}
         </div>
       </div>
+
     </div>
   );
 }

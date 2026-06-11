@@ -80,17 +80,40 @@ export function parseEnergyCSV(csvText: string): CSVParseResult {
         else shift = 'Noche';
       }
 
+      // Infer season, location, and climate defaults
+      const month = parseInt(rowMap.date.split('-')[1], 10) || 6;
+      let season: 'Verano' | 'Otoño' | 'Invierno' | 'Primavera' = 'Invierno';
+      if ([12, 1, 2].includes(month)) season = 'Verano';
+      else if ([3, 4, 5].includes(month)) season = 'Otoño';
+      else if ([6, 7, 8].includes(month)) season = 'Invierno';
+      else if ([9, 10, 11].includes(month)) season = 'Primavera';
+
+      const secLower = (rowMap.sector || '').toLowerCase();
+      let location: 'Ushuaia' | 'Río Grande' | 'Tolhuin' = 'Ushuaia';
+      if (secLower.includes('tolhuin') || secLower.includes('tlh')) location = 'Tolhuin';
+      else if (secLower.includes('grande') || secLower.includes('rgd')) location = 'Río Grande';
+
+      const tempVal = isNaN(temperature) ? 10.0 : parseFloat(temperature.toFixed(1));
+      const lightHours = season === 'Verano' ? 17 : season === 'Invierno' ? 7 : season === 'Primavera' ? 14 : 10;
+
       records.push({
         date: rowMap.date, // format YYYY-MM-DD
         hour,
         sector: rowMap.sector || 'General',
+        location,
         equipment: rowMap.equipment || 'Tablero General',
         consumption_kwh: parseFloat(consumption.toFixed(2)),
         production_units: isNaN(production) ? 0 : production,
-        external_temperature: isNaN(temperature) ? 15.0 : parseFloat(temperature.toFixed(1)),
+        external_temperature: tempVal,
         shift,
-        cost_per_kwh: isNaN(costKwh) ? 45.0 : parseFloat(costKwh.toFixed(2)),
-        status: 'Operativo'
+        cost_per_kwh: isNaN(costKwh) ? 65.0 : parseFloat(costKwh.toFixed(2)),
+        status: 'Operativo',
+        season,
+        temp_min: tempVal - 3,
+        temp_max: tempVal + 3,
+        wind_speed_kmh: 25,
+        light_hours: lightHours,
+        extreme_event: 'Ninguno'
       });
     }
 

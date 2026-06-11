@@ -5,48 +5,49 @@ export function generateMonthlyReportText(records: EnergyRecord[], anomalies: An
     return "No hay datos disponibles para generar el reporte.";
   }
 
-  // Calculate metrics
+  // Calculate overall metrics
   const totalKwh = records.reduce((sum, r) => sum + r.consumption_kwh, 0);
-  const costBase = records[0]?.cost_per_kwh || 45.0;
+  const costBase = records[0]?.cost_per_kwh || 65.0;
   const totalCost = totalKwh * costBase;
 
   const uniqueDates = Array.from(new Set(records.map(r => r.date)));
   const daysCount = uniqueDates.length;
-  const avgDailyKwh = totalKwh / (daysCount || 1);
 
-  // Peak hourly consumption
-  let peakRecord = records[0];
+  // Group consumption by Season
+  const seasonKwh: Record<string, number> = { Verano: 0, Otoño: 0, Invierno: 0, Primavera: 0 };
+  const seasonCount: Record<string, number> = { Verano: 0, Otoño: 0, Invierno: 0, Primavera: 0 };
+
   records.forEach(r => {
-    if (r.consumption_kwh > peakRecord.consumption_kwh) {
-      peakRecord = r;
-    }
+    seasonKwh[r.season] += r.consumption_kwh;
+    seasonCount[r.season] += 1;
   });
 
-  // Consumo por sector
+  const avgVerano = seasonCount['Verano'] > 0 ? (seasonKwh['Verano'] / (seasonCount['Verano'] / 24)) : 0;
+  const avgInvierno = seasonCount['Invierno'] > 0 ? (seasonKwh['Invierno'] / (seasonCount['Invierno'] / 24)) : 0;
+  const winterIncreasePct = avgVerano > 0 ? ((avgInvierno - avgVerano) / avgVerano) * 100 : 0;
+
+  // Group by Location
+  const locationKwh: Record<string, number> = { Ushuaia: 0, 'Río Grande': 0, Tolhuin: 0 };
+  records.forEach(rec => {
+    locationKwh[rec.location] += rec.consumption_kwh;
+  });
+
+  // Group by Sector
   const sectorSums: Record<string, number> = {};
   records.forEach(r => {
     sectorSums[r.sector] = (sectorSums[r.sector] || 0) + r.consumption_kwh;
   });
   const topSector = Object.entries(sectorSums).sort((a, b) => b[1] - a[1])[0];
 
-  // Consumo por equipo
-  const equipSums: Record<string, number> = {};
-  records.forEach(r => {
-    equipSums[r.equipment] = (equipSums[r.equipment] || 0) + r.consumption_kwh;
-  });
-  const topEquip = Object.entries(equipSums).sort((a, b) => b[1] - a[1])[0];
-
-  // Anomalías activas
+  // Anomalies
   const activeAnoms = anomalies.filter(a => !a.resolved);
   const criticalCount = activeAnoms.filter(a => a.severity === 'critica').length;
   const highCount = activeAnoms.filter(a => a.severity === 'alta').length;
 
-  // Potential savings (estimating 12% savings by resolving anomalies and simple adjustments)
-  const savingsPct = 12;
+  const savingsPct = 15; // 15% optimization potential
   const potentialSavingsKwh = totalKwh * (savingsPct / 100);
   const potentialSavingsCost = totalCost * (savingsPct / 100);
 
-  // Helper to format currency
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(val);
   };
@@ -57,62 +58,57 @@ export function generateMonthlyReportText(records: EnergyRecord[], anomalies: An
 
   const todayStr = new Date().toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' });
 
-  // Generate Markdown Text
-  return `# REPORTE MENSUAL DE EFICIENCIA ENERGÉTICA
+  // Tierra del Fuego grid emissions factor: 0.37 kg CO2 / kWh (Isolated Natural Gas Thermal Generation)
+  const co2Factor = 0.37;
+
+  return `# REPORTE MENSUAL DE PROSPECTIVA Y RESILIENCIA ENERGÉTICA
 **Plataforma EnergIA Sur**  
 *Fecha de generación: ${todayStr}*  
-*Periodo analizado: Últimos ${daysCount} días*  
-*Instalación: Planta Norte / Datos cargados*  
+*Periodo analizado: Ciclo Estacional Completo (${daysCount} días)*  
+*Área de cobertura: Sistema Eléctrico Aislado (Ushuaia, Río Grande y Tolhuin)*  
 
 ---
 
-## 1. RESUMEN EJECUTIVO
-En el periodo analizado de **${daysCount} días**, la instalación registró un consumo eléctrico total de **${formatKwh(totalKwh)}**, representando un costo operativo de **${formatCurrency(totalCost)}**. 
-A través de nuestro motor de inteligencia artificial, se identificó un **potencial de ahorro inmediato del ${savingsPct}%**, equivalente a **${formatCurrency(potentialSavingsCost)}** (${formatKwh(potentialSavingsKwh)}), mediante la resolución de fallas neumáticas, ajustes de climatización y control de cargas fuera de horario.
+## 1. RESUMEN DE PROSPECTIVA CLIMÁTICA
+En Tierra del Fuego, las variaciones climáticas ejercen una presión crítica sobre el sistema eléctrico aislado. 
+- Durante el periodo analizado, el consumo total acumulado fue de **${formatKwh(totalKwh)}**, representando un costo de facturación de **${formatCurrency(totalCost)}**.
+- **Impacto de la Estacionalidad**: El consumo diario promedio en **Invierno** aumentó un **${winterIncreasePct.toFixed(1)}%** respecto a la línea de base de **Verano**, impulsado por temperaturas bajo cero, tormentas de nieve y días extremadamente cortos (promedio de 7 horas de luz solar), lo que forzó la activación prolongada de calefacción eléctrica auxiliar y reflectores de iluminación.
 
 ---
 
-## 2. INDICADORES CLAVE (KPIs)
-- **Consumo Total:** ${formatKwh(totalKwh)}
-- **Costo Energético Total:** ${formatCurrency(totalCost)}
-- **Consumo Promedio Diario:** ${formatKwh(avgDailyKwh)}
-- **Pico de Demanda Horaria:** ${peakRecord.consumption_kwh} kWh (Registrado el ${peakRecord.date} a las ${peakRecord.hour}:00 hs)
-- **Sector con Mayor Consumo:** ${topSector ? topSector[0] : 'N/D'} (${formatKwh(topSector ? topSector[1] : 0)})
-- **Equipo con Mayor Consumo:** ${topEquip ? topEquip[0] : 'N/D'} (${formatKwh(topEquip ? topEquip[1] : 0)})
-- **Costo Promedio del kWh:** ${formatCurrency(costBase)}
+## 2. DESGLOSE GEOGRÁFICO Y SECTORIAL
+- **Distribución de Carga por Municipio**:
+  - **Río Grande**: ${formatKwh(locationKwh['Río Grande'])} (Predominancia industrial Ley 19.640)
+  - **Ushuaia**: ${formatKwh(locationKwh['Ushuaia'])} (Consumo hotelero y puerto pesquero)
+  - **Tolhuin**: ${formatKwh(locationKwh['Tolhuin'])} (Cabañas turísticas y aserraderos)
+- **Sector Crítico**: El sector de mayor demanda energética en la provincia fue **${topSector ? topSector[0] : 'N/D'}**, con un total de **${formatKwh(topSector ? topSector[1] : 0)}** consumidos.
 
 ---
 
-## 3. AUDITORÍA DE ANOMALÍAS
-Se detectaron un total de **${anomalies.length} anomalías**, de las cuales **${activeAnoms.length} se encuentran pendientes** de resolución:
-- **Críticas:** ${criticalCount} alerta(s) (Verificar de inmediato)
-- **Altas:** ${highCount} alerta(s) (Programar revisión esta semana)
-- **Medias / Bajas:** ${activeAnoms.length - criticalCount - highCount} alerta(s) (Ajustar en mantenimiento regular)
-
-### Desvíos críticos identificados:
-${activeAnoms.length > 0 
-  ? activeAnoms.slice(0, 3).map(a => `- **[${a.severity.toUpperCase()}] ${a.equipment}** (${a.sector}): ${a.explanation} *Recomendación: ${a.recommendation}*`).join('\n\n')
-  : "- No se registran anomalías pendientes."
-}
+## 3. AUDITORÍA DE RIESGOS E INEFICIENCIAS
+Se identificaron **${anomalies.length} anomalías climáticas y operativas**, con **${activeAnoms.length} pendientes** de intervención:
+- **Alertas Críticas:** ${criticalCount} (Acción inmediata requerida para evitar penalidades y sobrecargas)
+- **Alertas Altas:** ${highCount} (Programar resolución durante la semana en curso)
+- **Riesgos Climáticos Extremos**: Durante las olas de frío polar, la activación de calefactores eléctricos de resistencia multiplicó la susceptibilidad de la red, elevando el riesgo financiero.
 
 ---
 
-## 4. ESTIMACIÓN DE AHORRO PROYECTADO
-Aplicando un plan de optimización de consumo, se proyectan los siguientes beneficios financieros y ambientales:
+## 4. ESTIMACIÓN DE MITIGACIÓN Y HUELLA DE CARBONO
+Tierra del Fuego depende en un 100% de la turbogeneración termoeléctrica local basada en gas natural, lo que resulta en un factor de emisión local de **0.37 kg CO2/kWh**.
 
-| Indicador | Estado Actual | Proyección con Mejora (-${savingsPct}%) | Ahorro Neto Estimado |
+| Métrica | Consumo Histórico | Proyección con Optimización (-${savingsPct}%) | Ahorro / Reducción Neta |
 | :--- | :--- | :--- | :--- |
-| **Consumo Eléctrico** | ${formatKwh(totalKwh)} | ${formatKwh(totalKwh - potentialSavingsKwh)} | **${formatKwh(potentialSavingsKwh)}** |
-| **Costo Factura** | ${formatCurrency(totalCost)} | ${formatCurrency(totalCost - potentialSavingsCost)} | **${formatCurrency(potentialSavingsCost)}** |
-| **Huella de Carbono** | ${(totalKwh * 0.4 / 1000).toFixed(2)} ton CO2 | ${((totalKwh - potentialSavingsKwh) * 0.4 / 1000).toFixed(2)} ton CO2 | **${(potentialSavingsKwh * 0.4 / 1000).toFixed(2)} ton CO2** |
+| **Energía Eléctrica** | ${formatKwh(totalKwh)} | ${formatKwh(totalKwh - potentialSavingsKwh)} | **${formatKwh(potentialSavingsKwh)}** |
+| **Costo Operativo** | ${formatCurrency(totalCost)} | ${formatCurrency(totalCost - potentialSavingsCost)} | **${formatCurrency(potentialSavingsCost)}** |
+| **Huella de Carbono** | ${(totalKwh * co2Factor / 1000).toFixed(2)} tCO2 | ${((totalKwh - potentialSavingsKwh) * co2Factor / 1000).toFixed(2)} tCO2 | **${(potentialSavingsKwh * co2Factor / 1000).toFixed(2)} tCO2** |
 
 ---
 
-## 5. PRÓXIMAS ACCIONES SUGERIDAS (PLAN DE TRABAJO)
-1. **Reparación de Fuga en Compresor A**: Planificar mantenimiento correctivo del sistema de válvulas o sellos neumáticos.
-2. **Inspección Eléctrica del Motor Principal L1**: Realizar termografía y medición de corriente para corregir la progresiva pérdida de rendimiento mecánico.
-3. **Control Horario de Climatización y Luces**: Verificar la configuración de termostatos y luminarias de oficinas para evitar consumos los fines de semana.
-4. **Verificación de Burletes en Cámara de frío**: Mantener el aislamiento térmico durante las horas de temperaturas máximas del día.
-5. **Capacitación Operativa**: Concientizar al personal del turno de mayor ineficiencia sobre el apagado selectivo de equipos auxiliares ociosos.
+## 5. PLAN DE TRABAJO SUGERIDO (RESILIENCIA PRODUCTIVA)
+1. **Calibración de Termostatos Hoteleros e Industriales**: Ajustar umbrales a 17°C para evitar la activación innecesaria de calefacción eléctrica de apoyo en primavera y verano.
+2. **Desescarche Programado en Cámaras**: Realizar mantenimiento periódico de evaporadores pesqueros en Ushuaia ante la formación acelerada de hielo invernal.
+3. **Control Horario de Luminarias**: Ajustar los horarios de apagado de alumbrado de manera automatizada en base a las horas reales de luz solar mensuales (7 hs en invierno, 17 hs en verano).
+4. **Resguardo de Cabañas y Aberturas**: Mejorar la aislación térmica en las instalaciones turísticas de Tolhuin para limitar las fugas por ráfagas de viento fuertes.
+5. **Apagado Inteligente en Aserraderos**: Ejecutar cortes preventivos de línea ante temporales intensos para resguardar equipamientos y evitar consumos improductivos.
 `;
 }

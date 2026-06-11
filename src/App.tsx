@@ -10,6 +10,7 @@ import SavingsSimulator from './pages/SavingsSimulator';
 import Assistant from './pages/Assistant';
 import MonthlyReport from './pages/MonthlyReport';
 import ExternalSources from './pages/ExternalSources';
+import SeasonalAnalysis from './pages/SeasonalAnalysis';
 
 import { EnergyRecord, Anomaly } from './types/energy';
 import { generateDemoData } from './services/demoData';
@@ -75,6 +76,8 @@ export default function App() {
         );
       case 'analysis':
         return <ConsumptionAnalysis records={records} />;
+      case 'seasonal':
+        return <SeasonalAnalysis records={records} anomalies={anomalies} />;
       case 'anomalies':
         return (
           <Anomalies 

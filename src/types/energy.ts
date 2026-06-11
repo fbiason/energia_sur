@@ -2,6 +2,7 @@ export interface EnergyRecord {
   date: string; // YYYY-MM-DD
   hour: number; // 0-23
   sector: string;
+  location: 'Ushuaia' | 'Río Grande' | 'Tolhuin';
   equipment: string;
   consumption_kwh: number;
   production_units: number;
@@ -9,6 +10,14 @@ export interface EnergyRecord {
   shift: 'Mañana' | 'Tarde' | 'Noche';
   cost_per_kwh: number;
   status: 'Operativo' | 'Mantenimiento' | 'Inactivo';
+  
+  // Variables climáticas y estacionales
+  season: 'Verano' | 'Otoño' | 'Invierno' | 'Primavera';
+  temp_min: number;
+  temp_max: number;
+  wind_speed_kmh: number;
+  light_hours: number;
+  extreme_event: 'Ninguno' | 'Ola de frío polar' | 'Tormenta de nieve' | 'Viento extremo';
 }
 
 export interface Anomaly {
