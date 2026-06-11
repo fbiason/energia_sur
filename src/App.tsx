@@ -125,7 +125,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex bg-[#090d16] text-slate-100 font-sans">
+    <div className="min-h-screen flex bg-[#020B1F] text-slate-100 font-sans">
       {/* Sidebar Navigation */}
       <Sidebar 
         activeTab={activeTab} 
@@ -135,7 +135,7 @@ export default function App() {
       />
       
       {/* Main Content Area */}
-      <main className="flex-1 h-screen overflow-y-auto p-8 lg:p-10 pb-12 scrollbar-thin bg-gradient-to-tr from-[#090d16] via-[#0d1424] to-[#0b101c]">
+      <main className="flex-1 h-screen overflow-y-auto p-8 lg:p-10 pb-12 scrollbar-thin bg-gradient-to-tr from-[#020B1F] via-[#031130] to-[#020B1F]">
         <div className="max-w-7xl mx-auto">
           {renderActivePage()}
         </div>
