@@ -35,14 +35,14 @@ export default function Sidebar({ activeTab, setActiveTab, anomalyCount, onLogou
   ];
 
   return (
-    <aside className="w-80 h-screen sticky top-0 flex flex-col bg-slate-50 border-r border-slate-200 text-slate-700 shadow-xl shadow-slate-950/5 relative z-20">
-      {/* Brand Header */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-200 bg-slate-100/50">
+    <aside className="w-80 h-screen sticky top-0 flex flex-col bg-slate-950 border-r border-slate-900 text-slate-300">
+      {/* Brand Header (Light gray panel for logo visibility) */}
+      <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-800 bg-slate-100">
         <div className="h-20 w-20 flex items-center justify-center bg-transparent shrink-0">
           <img src="/logo.png" alt="EnergIA Sur Logo" className="h-full w-full object-contain hover:scale-105 transition-transform duration-300" />
         </div>
         <div>
-          <h1 className="text-xl font-extrabold text-slate-900 tracking-wide">
+          <h1 className="text-xl font-bold text-slate-900 tracking-wide">
             EnergIA Sur
           </h1>
           <p className="text-xs text-slate-500 font-mono">v1.0.0 • Industrial IoT</p>
@@ -59,16 +59,16 @@ export default function Sidebar({ activeTab, setActiveTab, anomalyCount, onLogou
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 group ${
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group ${
                 isActive
-                  ? 'bg-cyan-50 text-cyan-600 border-l-4 border-cyan-600 shadow-sm'
-                  : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 border-l-4 border-transparent'
+                  ? 'bg-gradient-to-r from-cyan-950/70 to-slate-900 text-cyan-400 border-l-4 border-cyan-500 shadow-md shadow-cyan-950/20'
+                  : 'hover:bg-slate-900/60 hover:text-slate-100 border-l-4 border-transparent'
               }`}
             >
               <div className="flex items-center gap-3">
                 <IconComponent
                   className={`h-4.5 w-4.5 transition-transform duration-200 group-hover:scale-105 ${
-                    isActive ? 'text-cyan-600' : 'text-slate-400 group-hover:text-slate-600'
+                    isActive ? 'text-cyan-400' : 'text-slate-400 group-hover:text-slate-300'
                   }`}
                 />
                 <span className="truncate">{item.name}</span>
@@ -76,8 +76,8 @@ export default function Sidebar({ activeTab, setActiveTab, anomalyCount, onLogou
               {item.badge !== undefined && item.badge > 0 && (
                 <span className={`px-2 py-0.5 text-xxs font-bold rounded-full ${
                   isActive 
-                    ? 'bg-cyan-600 text-white' 
-                    : 'bg-rose-100 text-rose-600 border border-rose-200'
+                    ? 'bg-cyan-500 text-slate-950' 
+                    : 'bg-rose-950/60 text-rose-400 border border-rose-800/40 shadow-[0_0_10px_rgba(244,63,94,0.1)]'
                 }`}>
                   {item.badge}
                 </span>
@@ -88,26 +88,26 @@ export default function Sidebar({ activeTab, setActiveTab, anomalyCount, onLogou
       </nav>
 
       {/* System Status Footer */}
-      <div className="p-4 border-t border-slate-200 bg-slate-100/30 font-mono text-[10px] text-slate-500 space-y-2">
+      <div className="p-4 border-t border-slate-900 bg-slate-950/30 font-mono text-[10px] text-slate-500 space-y-2">
         <div className="flex justify-between items-center">
           <span>SISTEMA IoT</span>
           <span className="flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping"></span>
-            <span className="text-slate-700">ONLINE</span>
+            <span className="text-slate-400">ONLINE</span>
           </span>
         </div>
         <div className="flex justify-between">
           <span>ALGORITMO AI</span>
-          <span className="text-cyan-600">ACTIVO</span>
+          <span className="text-cyan-400">ACTIVO</span>
         </div>
-        <div className="text-[9px] text-slate-500 truncate">
+        <div className="text-[9px] text-slate-600 truncate">
           CWD: IATHON_LOCAL_NODE
         </div>
         
         {/* Cerrar Sesión Button */}
         <button
           onClick={onLogout}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 hover:border-rose-450 hover:text-rose-700 transition-all duration-200 mt-3 font-mono uppercase"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-bold text-rose-400 hover:bg-rose-950/40 border border-rose-900/30 hover:border-rose-700/50 hover:text-rose-300 transition-all duration-200 mt-3 font-mono uppercase"
         >
           <LogOut className="h-3.5 w-3.5" /> Cerrar Sesión
         </button>

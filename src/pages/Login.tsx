@@ -55,7 +55,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             <h2 className="text-2xl font-extrabold bg-gradient-to-r from-white via-slate-100 to-cyan-400 bg-clip-text text-transparent tracking-wide">
               EnergIA Sur
             </h2>
-            <p className="text-xs text-slate-400 mt-1">Industrial IoT • Monitoreo Estacional y Tarifario</p>
+            <p className="text-xs text-slate-400 mt-1">Grupo 10 • Monitoreo Estacional y Tarifario</p>
           </div>
         </div>
 
