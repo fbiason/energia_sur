@@ -95,7 +95,8 @@ export function parseEnergyCSV(csvText: string): CSVParseResult {
     }
 
     return { success: true, records };
-  } catch (err: any) {
-    return { success: false, records: [], error: `Error en lectura del archivo: ${err.message || err}` };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, records: [], error: `Error en lectura del archivo: ${errorMsg}` };
   }
 }

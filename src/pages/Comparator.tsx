@@ -8,8 +8,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
-  Legend
+  Tooltip
 } from 'recharts';
 
 interface ComparatorProps {
@@ -42,7 +41,7 @@ export default function Comparator({ records }: ComparatorProps) {
       // Calculate efficiency score: arbitrary scaling relative to standard target
       // Target for production sector is 0.35 kWh/unit. Target for camera is temp dependent.
       // We score them out of 100. If no production units, we set score based on idle load.
-      let efficiency_score = 100;
+      let efficiency_score: number;
       if (val.units > 0) {
         const ratio = 0.35 / kwh_per_unit;
         efficiency_score = Math.max(30, Math.min(100, Math.round(ratio * 100)));
@@ -139,9 +138,9 @@ export default function Comparator({ records }: ComparatorProps) {
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div>
-        <h2 className="text-3xl font-extrabold text-white tracking-tight">Comparador de Eficiencia</h2>
+        <h2 className="text-3xl font-extrabold text-white tracking-tight">Comparador de Sectores</h2>
         <p className="text-slate-400 mt-1">
-          Auditoría comparativa y rankings de rendimiento por sectores, maquinarias industriales y turnos.
+          Auditoría comparativa y rankings de rendimiento energético por sectores, dispositivos y turnos en Tierra del Fuego.
         </p>
       </div>
 
@@ -279,7 +278,7 @@ export default function Comparator({ records }: ComparatorProps) {
         {/* Equipment Rankings */}
         <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
           <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <Zap className="h-5 w-5 text-cyan-400" /> Top de Maquinarias con Mayor Consumo
+            <Zap className="h-5 w-5 text-cyan-400" /> Top de Dispositivos con Mayor Consumo
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

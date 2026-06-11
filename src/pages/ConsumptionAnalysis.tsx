@@ -19,7 +19,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   Cell
 } from 'recharts';
 
@@ -42,8 +41,8 @@ export default function ConsumptionAnalysis({ records }: ConsumptionAnalysisProp
     return ['all', ...Array.from(new Set(records.filter(r => r.sector === selectedSector).map(r => r.equipment)))];
   }, [records, selectedSector]);
 
-  // Adjust selected equipment if sector changes
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedEquipment('all');
   }, [selectedSector]);
 

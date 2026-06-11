@@ -15,8 +15,6 @@ import MetricCard from '../components/MetricCard';
 import {
   AreaChart,
   Area,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -24,8 +22,7 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell,
-  Legend
+  Cell
 } from 'recharts';
 
 interface DashboardProps {
@@ -75,7 +72,7 @@ export default function Dashboard({ records, anomalies, setActiveTab }: Dashboar
     if (totalProduction > 0) {
       // Calculate active production sectors consumption
       const prodSectorsKwh = records
-        .filter(r => r.sector.includes('Producción') || r.equipment.includes('Motor'))
+        .filter(r => r.sector.includes('Industria') || r.equipment.includes('Línea'))
         .reduce((sum, r) => sum + r.consumption_kwh, 0);
       
       const kwhPerUnit = prodSectorsKwh / totalProduction;
@@ -85,7 +82,7 @@ export default function Dashboard({ records, anomalies, setActiveTab }: Dashboar
     }
 
     const activeAnomaliesCount = anomalies.filter(a => !a.resolved).length;
-    const potentialSavingsCost = totalCost * 0.12; // 12% potential saving
+    const potentialSavingsCost = totalCost * 0.15; // 15% potential saving
 
     // Chart 1: Daily consumption over time
     const dailyDataMap: Record<string, number> = {};
@@ -145,7 +142,7 @@ export default function Dashboard({ records, anomalies, setActiveTab }: Dashboar
         <div>
           <h2 className="text-3xl font-extrabold text-white tracking-tight">Monitoreo General</h2>
           <p className="text-slate-400 mt-1">
-            Información en tiempo real y métricas clave calculadas por el motor analítico.
+            Información en tiempo real y métricas clave de consumo para el sistema eléctrico de Tierra del Fuego.
           </p>
         </div>
         
@@ -205,7 +202,7 @@ export default function Dashboard({ records, anomalies, setActiveTab }: Dashboar
           icon={Sparkles}
           accentColor="emerald"
           trend={{ value: '8.4%', isGood: true }}
-          description="Rendimiento del parque industrial"
+          description="Rendimiento de sectores fueguinos"
         />
         <MetricCard
           title="Anomalías Detectadas"
@@ -219,7 +216,7 @@ export default function Dashboard({ records, anomalies, setActiveTab }: Dashboar
           value={formatCurrency(metrics.potentialSavingsCost)}
           icon={TrendingDown}
           accentColor="emerald"
-          description="Optimización factible (12%)"
+          description="Optimización factible (15%)"
         />
       </div>
 
@@ -308,10 +305,10 @@ export default function Dashboard({ records, anomalies, setActiveTab }: Dashboar
             </div>
             <div>
               <p className="text-sm font-bold text-slate-200">
-                Atención: Se registran {metrics.activeAnomaliesCount} anomalías operativas sin resolver.
+                Atención: Se registran {metrics.activeAnomaliesCount} ineficiencias de consumo sin resolver.
               </p>
               <p className="text-xs text-slate-400 mt-0.5">
-                Detectado desgaste progresivo y consumos fuera de horario comercial.
+                Detectado consumo no operativo los fines de semana y desvíos de rendimiento térmico o industrial.
               </p>
             </div>
           </div>
@@ -320,7 +317,7 @@ export default function Dashboard({ records, anomalies, setActiveTab }: Dashboar
             onClick={() => setActiveTab('anomalies')}
             className="px-4 py-2 text-xs font-semibold rounded-lg bg-rose-950 hover:bg-rose-900 border border-rose-800/50 text-rose-300 hover:text-rose-100 transition-all shrink-0"
           >
-            Inspeccionar Alertas
+            Inspeccionar Ineficiencias
           </button>
         </div>
       )}

@@ -14,9 +14,6 @@ export function detectAnomalies(records: EnergyRecord[]): Anomaly[] {
     if (!equipmentBaselines[rec.equipment][rec.hour]) {
       equipmentBaselines[rec.equipment][rec.hour] = { sum: 0, count: 0, values: [] };
     }
-    // We only use the first 14 days (non-anomalous baseline period ideally) or general average
-    // to build a baseline, but since there are anomalies in week 3, using all days is fine if we use median or simple average.
-    // Let's store all values.
     equipmentBaselines[rec.equipment][rec.hour].sum += rec.consumption_kwh;
     equipmentBaselines[rec.equipment][rec.hour].count += 1;
     equipmentBaselines[rec.equipment][rec.hour].values.push(rec.consumption_kwh);
@@ -59,52 +56,51 @@ export function detectAnomalies(records: EnergyRecord[]): Anomaly[] {
     const key = `${rec.date}_${rec.equipment}`;
 
     // 1. Off-hours anomalies (Administration heating/lighting left on during weekends/nights)
-    if (rec.sector === 'Administración' || rec.equipment.includes('Oficinas')) {
+    if (rec.sector === 'Administración Pública' || rec.equipment === 'Calefacción Eléctrica Soporte' || rec.equipment === 'Iluminación y Servidores') {
       const isWeekend = new Date(`${rec.date}T00:00:00`).getDay() === 0 || new Date(`${rec.date}T00:00:00`).getDay() === 6;
       const isNight = rec.hour >= 22 || rec.hour < 6;
 
-      if ((isWeekend || isNight) && rec.consumption_kwh > 4.5 && !detectedKeys.has(key)) {
+      if ((isWeekend || isNight) && rec.consumption_kwh > 5.0 && !detectedKeys.has(key)) {
         detectedKeys.add(key);
         anomalies.push({
           id: `anom_offhours_${rec.date}_${rec.hour}_${rec.equipment.replace(/\s+/g, '')}`,
           timestamp,
           sector: rec.sector,
           equipment: rec.equipment,
-          type: 'Consumo no operativo ineficiente',
+          type: 'Desvío de consumo en oficinas públicas',
           severity: 'media',
-          explanation: `Se detectó un consumo de ${rec.consumption_kwh} kWh en ${rec.equipment} durante horario no operativo (${isWeekend ? 'fin de semana' : 'madrugada'}). El promedio normal en este horario es inferior a 1.0 kWh.`,
-          recommendation: `Verificar el apagado automático de luces y programar termostatos para reducir la calefacción a modo pasivo durante cierres operativos.`,
+          explanation: `Se detectó un consumo ineficiente de ${rec.consumption_kwh} kWh en ${rec.equipment} durante horario no operativo (fin de semana o madrugada) en dependencias públicas. El promedio normal esperado es inferior a 1.0 kWh.`,
+          recommendation: `Implementar temporizadores automáticos para apagar la calefacción eléctrica de soporte y luces al finalizar la jornada laboral los viernes.`,
           resolved: false
         });
         return; // skip other checks for this record
       }
     }
 
-    // 2. High Outliers (e.g. Compressor A leak)
-    // If consumption is > 30% higher than average and also exceeds 2 standard deviations
+    // 2. High Outliers (e.g. Compressor leak)
     const deviationPercent = (rec.consumption_kwh - baseline.avg) / (baseline.avg || 1);
     
     if (rec.consumption_kwh > baseline.avg + 2 * baseline.stdDev && deviationPercent > 0.28 && !detectedKeys.has(key)) {
       
-      // Specifically target Compressor A leak
-      if (rec.equipment === 'Compresor A' && deviationPercent > 0.35) {
+      // Specifically target Compressor leak in fishery cold chambers
+      if (rec.equipment === 'Compresores de Frío Ushuaia' && deviationPercent > 0.35) {
         detectedKeys.add(key);
         anomalies.push({
           id: `anom_leak_${rec.date}_${rec.hour}`,
           timestamp,
           sector: rec.sector,
           equipment: rec.equipment,
-          type: 'Fuga o desgaste de compresión',
+          type: 'Fuga o pérdida de compresión de congelado',
           severity: 'alta',
-          explanation: `El Compresor A consumió ${rec.consumption_kwh} kWh (un ${(deviationPercent * 100).toFixed(0)}% por encima de su promedio habitual de ${baseline.avg.toFixed(1)} kWh) sin registrar aumentos proporcionales en las unidades de producción.`,
-          recommendation: `Realizar una prueba de ultrasonido en las líneas neumáticas para ubicar fugas de aire comprimido y chequear el sello de pistones del compresor.`,
+          explanation: `Los Compresores de Frío Ushuaia registraron un consumo de ${rec.consumption_kwh} kWh (un ${(deviationPercent * 100).toFixed(0)}% por encima de su promedio habitual de ${baseline.avg.toFixed(1)} kWh) sin registrar aumentos proporcionales en las toneladas refrigeradas.`,
+          recommendation: `Realizar mantenimiento preventivo hidráulico en las válvulas de las cámaras de congelado y verificar el nivel de refrigerante.`,
           resolved: false
         });
         return;
       }
 
-      // Generic High consumption outlier
-      if (rec.equipment !== 'Compresor A' && !rec.equipment.includes('Oficinas') && rec.production_units === 0) {
+      // Generic High consumption outlier (excluding residential which is volatile)
+      if (rec.equipment !== 'Compresores de Frío Ushuaia' && !rec.equipment.includes('Hogares') && !rec.equipment.includes('Soporte') && rec.production_units === 0) {
         detectedKeys.add(key);
         anomalies.push({
           id: `anom_high_${rec.date}_${rec.hour}_${rec.equipment.replace(/\s+/g, '')}`,
@@ -113,7 +109,7 @@ export function detectAnomalies(records: EnergyRecord[]): Anomaly[] {
           equipment: rec.equipment,
           type: 'Exceso de consumo en stand-by',
           severity: 'baja',
-          explanation: `Consumo inusual de ${rec.consumption_kwh} kWh en standby (sin producción activa). El promedio esperado es ${baseline.avg.toFixed(1)} kWh.`,
+          explanation: `Consumo inusual de ${rec.consumption_kwh} kWh en reposo (stand-by) sin actividad de servicio. El promedio esperado en este horario es ${baseline.avg.toFixed(1)} kWh.`,
           recommendation: `Asegurarse de que el equipo sea apagado por completo en lugar de permanecer en modo de espera (standby).`,
           resolved: false
         });
@@ -121,9 +117,8 @@ export function detectAnomalies(records: EnergyRecord[]): Anomaly[] {
       }
     }
 
-    // 3. Efficiency Decline (Gradual degradation)
-    // If Motor Principal L1 is running, and its kWh/unit is way higher than usual (> 0.46)
-    if (rec.equipment === 'Motor Principal L1' && rec.production_units > 10) {
+    // 3. Efficiency Decline (Gradual degradation in electronic assembly line)
+    if (rec.equipment === 'Línea de Ensamblaje' && rec.production_units > 10) {
       const kwhPerUnit = rec.consumption_kwh / rec.production_units;
       if (kwhPerUnit > 0.47 && !detectedKeys.has(key)) {
         detectedKeys.add(key);
@@ -132,29 +127,29 @@ export function detectAnomalies(records: EnergyRecord[]): Anomaly[] {
           timestamp,
           sector: rec.sector,
           equipment: rec.equipment,
-          type: 'Pérdida progresiva de rendimiento',
+          type: 'Pérdida progresiva de rendimiento industrial',
           severity: 'alta',
-          explanation: `El Motor Principal L1 registró una eficiencia de ${kwhPerUnit.toFixed(3)} kWh/unidad, un 35% más alta que el estándar nominal de 0.35 kWh/unidad. Esto refleja fricción mecánica o fatiga del devanado.`,
-          recommendation: `Programar mantenimiento para revisión de rodamientos, alineación de ejes y control de corriente trifásica del estator.`,
+          explanation: `La Línea de Ensamblaje industrial (Ley 19.640) registró un rendimiento de ${kwhPerUnit.toFixed(3)} kWh/unidad, un 35% superior a la línea de base histórica. Esto refleja fricción mecánica o desbalanceo eléctrico.`,
+          recommendation: `Programar mantenimiento preventivo de lubricación y control de corriente trifásica de los rodillos transportadores.`,
           resolved: false
         });
         return;
       }
     }
 
-    // 4. Heatwave Cooling spikes (Cámara frigorífica temperature correlation)
-    if (rec.equipment === 'Cámara Frigorífica' && rec.external_temperature > 32) {
-      if (rec.consumption_kwh > baseline.avg * 1.5 && !detectedKeys.has(key)) {
+    // 4. Heatwave/climate cooling spikes in Tierra del Fuego (when temp climbs above 14°C)
+    if (rec.equipment === 'Cámara Congeladora Grande' && rec.external_temperature > 14) {
+      if (rec.consumption_kwh > baseline.avg * 1.35 && !detectedKeys.has(key)) {
         detectedKeys.add(key);
         anomalies.push({
           id: `anom_temp_${rec.date}_${rec.hour}`,
           timestamp,
           sector: rec.sector,
           equipment: rec.equipment,
-          type: 'Sobrecarga térmica por clima',
+          type: 'Sobrecarga térmica por anomalía climática',
           severity: 'critica',
-          explanation: `La Cámara Frigorífica registró un consumo récord de ${rec.consumption_kwh} kWh debido a una temperatura ambiente externa extrema de ${rec.external_temperature}°C.`,
-          recommendation: `Verificar el estado de los burletes de las puertas, evitar aperturas prolongadas y activar cortinas plásticas de aire para atenuar el choque térmico.`,
+          explanation: `La Cámara Congeladora Grande en puerto registró un consumo récord de ${rec.consumption_kwh} kWh debido a una temperatura ambiente externa atípica en la isla de ${rec.external_temperature}°C.`,
+          recommendation: `Verificar burletes, minimizar apertura de compuertas durante las horas de pico térmico y activar las cortinas de viento de atenuación.`,
           resolved: false
         });
         return;

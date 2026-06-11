@@ -6,7 +6,6 @@ import {
   AlertCircle, 
   RefreshCw, 
   Download,
-  Info,
   Server,
   CloudSun
 } from 'lucide-react';
@@ -76,7 +75,7 @@ export default function DataUpload({
 
   const handleUseDemo = () => {
     onResetDemo();
-    setSuccessMsg('Se ha restablecido el conjunto de datos de simulación (60 días para Planta Norte).');
+    setSuccessMsg('Se ha restablecido el conjunto de datos de simulación (60 días para Tierra del Fuego).');
     setError(null);
   };
 
@@ -135,7 +134,7 @@ export default function DataUpload({
                 {isSimulated && <span className="text-xs bg-cyan-500 text-slate-950 font-mono font-bold px-2 py-0.5 rounded-full">Activo</span>}
               </div>
               <p className="text-xs mt-1 text-slate-400 leading-relaxed">
-                60 días de mediciones horarias de "Planta Norte". Incluye desvíos y anomalías artificiales para demostración.
+                60 días de mediciones horarias de sectores urbanos e industriales de Tierra del Fuego. Incluye desvíos e ineficiencias para demostración.
               </p>
             </button>
 
@@ -261,7 +260,7 @@ export default function DataUpload({
         </div>
         
         <p className="text-sm text-slate-400 leading-relaxed">
-          Para enriquecer el análisis predictivo y correlacionar consumos con la actividad económica general o el clima regional, EnergyAI Manager permite planificar conexiones API con las siguientes entidades abiertas. Visite la pestaña <strong className="text-slate-200">"Fuentes de Datos"</strong> para simular sus credenciales de acceso:
+          Para enriquecer el análisis predictivo y correlacionar consumos con la actividad económica general o el clima regional, EnergIA SUR permite planificar conexiones API con las siguientes entidades abiertas. Visite la pestaña <strong className="text-slate-200">"Fuentes de Datos"</strong> para simular sus credenciales de acceso:
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">

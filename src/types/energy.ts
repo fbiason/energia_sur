@@ -40,7 +40,7 @@ export interface ChatMessage {
     type: 'metric' | 'chart' | 'list';
     title: string;
     content: string;
-    chartData?: any[];
+    chartData?: Record<string, string | number>[];
   };
 }
 

@@ -3,7 +3,6 @@ import { EnergyRecord } from '../types/energy';
 import { forecastNext7Days, getForecastChartData } from '../services/forecaster';
 import { 
   Calendar, 
-  DollarSign, 
   ShieldAlert, 
   AlertTriangle, 
   TrendingUp, 
@@ -246,7 +245,7 @@ export default function Predictions({ records }: PredictionsProps) {
           </h4>
           
           <div className="space-y-3 pt-2">
-            {forecast.slice(0, 3).map((day, idx) => (
+            {forecast.slice(0, 3).map((day) => (
               <div key={day.date} className="p-3 rounded-xl bg-slate-900/50 border border-slate-900 space-y-1">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] text-slate-500 font-mono">{day.date} ({new Date(`${day.date}T00:00:00`).toLocaleDateString('es-AR', {weekday:'short'})})</span>

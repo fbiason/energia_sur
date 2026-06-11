@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { EnergyRecord, Anomaly } from '../types/energy';
 import { generateMonthlyReportText } from '../services/reportGenerator';
-import { FileText, Copy, Check, Printer, HelpCircle, AlertCircle, Briefcase } from 'lucide-react';
+import { FileText, Copy, Check, Printer, Briefcase } from 'lucide-react';
 
 interface MonthlyReportProps {
   records: EnergyRecord[];
@@ -34,7 +34,7 @@ export default function MonthlyReport({ records, anomalies }: MonthlyReportProps
   const renderedHtml = useMemo(() => {
     return reportText
       .split('\n')
-      .map((line, idx) => {
+      .map((line) => {
         const trimmed = line.trim();
         if (trimmed.startsWith('# ')) {
           return `<h3 class="text-xl font-extrabold text-white mt-6 mb-3 border-b border-slate-900 pb-2">${trimmed.substring(2)}</h3>`;
@@ -70,9 +70,9 @@ export default function MonthlyReport({ records, anomalies }: MonthlyReportProps
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-extrabold text-white tracking-tight">Reporte Mensual Automático</h2>
+          <h2 className="text-3xl font-extrabold text-white tracking-tight">Reporte de Prospectiva Mensual</h2>
           <p className="text-slate-400 mt-1">
-            Generación instantánea de auditoría energética mensual para copiar o imprimir.
+            Generación automática de auditoría energética y prospectiva de subsidios para copiar o imprimir.
           </p>
         </div>
         
@@ -128,10 +128,10 @@ export default function MonthlyReport({ records, anomalies }: MonthlyReportProps
           {/* Instructions card */}
           <div className="glass-panel p-5 rounded-2xl border border-slate-800 bg-slate-900/40 space-y-3">
             <h4 className="text-sm font-bold text-white flex items-center gap-2">
-              <Briefcase className="h-4.5 w-4.5 text-cyan-400" /> Plan de Auditoría
+              <Briefcase className="h-4.5 w-4.5 text-cyan-400" /> Plan de Prospectiva
             </h4>
             <p className="text-xs text-slate-400 leading-relaxed font-sans">
-              Este reporte automatizado consolida consumos, tarifas vigentes y logs de alertas detectadas en el período. 
+              Este reporte consolidado detalla consumos, ineficiencias de climatización, mitigación ambiental y el impacto de los subsidios en Tierra del Fuego.
             </p>
             <div className="p-3 rounded-lg bg-slate-950 border border-slate-900 text-xxs leading-relaxed font-mono text-slate-500">
               * Ideal para adjuntar en reportes de gerencia o enviar por correo electrónico a mantenimiento técnico.
@@ -140,30 +140,30 @@ export default function MonthlyReport({ records, anomalies }: MonthlyReportProps
 
           {/* Quick Actions checklist */}
           <div className="glass-panel p-5 rounded-2xl border border-slate-850 space-y-4">
-            <h4 className="text-sm font-bold text-white uppercase tracking-wider font-mono">Tareas Críticas a Ejecutar</h4>
+            <h4 className="text-sm font-bold text-white uppercase tracking-wider font-mono">Plan de Trabajo sugerido</h4>
             
             <div className="space-y-3">
               <div className="flex gap-2.5 items-start">
                 <input type="checkbox" className="h-4.5 w-4.5 rounded border-slate-800 bg-slate-950 text-cyan-500 focus:ring-0 mt-0.5" />
                 <div>
-                  <span className="text-xs font-bold text-slate-200">Revisión de fuga</span>
-                  <p className="text-[10px] text-slate-500">Inspección física en Compresor A.</p>
+                  <span className="text-xs font-bold text-slate-200">Revisión de cámaras</span>
+                  <p className="text-[10px] text-slate-500">Mantenimiento de burletes en Cámara Congeladora.</p>
                 </div>
               </div>
 
               <div className="flex gap-2.5 items-start">
                 <input type="checkbox" className="h-4.5 w-4.5 rounded border-slate-800 bg-slate-950 text-cyan-500 focus:ring-0 mt-0.5" />
                 <div>
-                  <span className="text-xs font-bold text-slate-200">Engrase Motor L1</span>
-                  <p className="text-[10px] text-slate-500">Mantenimiento preventivo por desvío de kWh/unidad.</p>
+                  <span className="text-xs font-bold text-slate-200">Apagado de Radiadores</span>
+                  <p className="text-[10px] text-slate-500">Temporizadores para Calefacción Eléctrica Soporte en oficinas.</p>
                 </div>
               </div>
 
               <div className="flex gap-2.5 items-start">
                 <input type="checkbox" className="h-4.5 w-4.5 rounded border-slate-800 bg-slate-950 text-cyan-500 focus:ring-0 mt-0.5" />
                 <div>
-                  <span className="text-xs font-bold text-slate-200">Ajuste Termostato</span>
-                  <p className="text-[10px] text-slate-500">Programar calefacción de oficinas para fin de semana.</p>
+                  <span className="text-xs font-bold text-slate-200">Desplazamiento de pico</span>
+                  <p className="text-[10px] text-slate-500">Coordinar turnos industriales fuera de la franja pico (18 a 22h).</p>
                 </div>
               </div>
             </div>

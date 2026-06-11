@@ -1,13 +1,12 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { EnergyRecord, Anomaly, ChatMessage } from '../types/energy';
 import { getAssistantResponse } from '../services/assistant';
-import { MessageSquareCode, Send, Sparkles, HelpCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { Send, Sparkles } from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
   Bar,
   XAxis,
-  YAxis,
   Tooltip
 } from 'recharts';
 
@@ -17,24 +16,17 @@ interface AssistantProps {
 }
 
 export default function Assistant({ records, anomalies }: AssistantProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
+    {
+      id: 'welcome',
+      sender: 'assistant',
+      text: '¡Hola! Soy el asistente de **EnergIA SUR**, tu consultor de prospectiva energética para Tierra del Fuego. Analicé los consumos y la matriz de la isla, y estoy listo para responder tus consultas.\n\nPodés escribirme sobre subsidios, tarifas, costos proyectados, ineficiencias o sostenibilidad.',
+      timestamp: new Date()
+    }
+  ]);
   const [inputValue, setInputValue] = useState<string>('');
   const [isTyping, setIsTyping] = useState<boolean>(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
-
-  // Initialize with greeting
-  useEffect(() => {
-    if (messages.length === 0) {
-      setMessages([
-        {
-          id: 'welcome',
-          sender: 'assistant',
-          text: '¡Hola! Soy **EnergyAI Assistant**, tu consultor energético. Analicé el conjunto de datos activo y estoy listo para responder tus dudas.\n\nPodés escribirme o seleccionar alguna de las preguntas rápidas aquí abajo.',
-          timestamp: new Date()
-        }
-      ]);
-    }
-  }, [messages]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -46,6 +38,7 @@ export default function Assistant({ records, anomalies }: AssistantProps) {
 
     // Add User Message
     const userMsg: ChatMessage = {
+      // eslint-disable-next-line react-hooks/purity
       id: `msg_user_${Date.now()}`,
       sender: 'user',
       text,
@@ -65,19 +58,18 @@ export default function Assistant({ records, anomalies }: AssistantProps) {
   };
 
   const suggestionChips = [
-    '¿Qué equipo consume más?',
-    '¿Qué turno es el menos eficiente?',
-    '¿Cuánto puedo ahorrar un 15%?',
-    '¿Qué equipo debo revisar primero?',
-    '¿Recomendaciones de ahorro?'
+    '¿Cómo impacta la quita de subsidios?',
+    '¿Cuál es el costo real vs subsidiado?',
+    '¿Qué implica ser un sistema aislado?',
+    '¿Huella de carbono en la isla?',
+    '¿Recomendaciones de ahorro energético?'
   ];
 
   // Helper to format chat message bold texts (**text**) as HTML bold tags
   const renderMessageText = (text: string) => {
     // Replace **bold** with strong
     const boldRegex = /\*\*(.*?)\*\*/g;
-    const bulletRegex = /^\*\s+(.*)/gm;
-    let formatted = text
+    const formatted = text
       .replace(boldRegex, '<strong class="text-cyan-400 font-extrabold">$1</strong>')
       .replace(/\n/g, '<br />');
 
@@ -90,15 +82,15 @@ export default function Assistant({ records, anomalies }: AssistantProps) {
       {/* Header */}
       <div className="flex justify-between items-center shrink-0">
         <div>
-          <h2 className="text-3xl font-extrabold text-white tracking-tight">EnergyAI Assistant</h2>
+          <h2 className="text-3xl font-extrabold text-white tracking-tight">Asistente EnergIA</h2>
           <p className="text-slate-400 mt-1">
-            Chatea con nuestro modelo experto para realizar consultas en lenguaje natural sobre tus consumos.
+            Chatea con nuestro asistente experto en prospectiva, tarifas, subsidios y eficiencia energética fueguina.
           </p>
         </div>
         
         <span className="text-xs bg-slate-900 border border-slate-800 text-slate-500 px-3 py-1.5 rounded-xl font-mono flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse-soft"></span>
-          Heurística Local / API Ready
+          Heurística Fueguina / API Ready
         </span>
       </div>
 
@@ -126,7 +118,7 @@ export default function Assistant({ records, anomalies }: AssistantProps) {
                   <div className="flex justify-between items-center gap-6 text-[10px] font-mono text-slate-500">
                     <span className="flex items-center gap-1">
                       {!isUser && <Sparkles className="h-3 w-3 text-cyan-400 fill-cyan-400" />}
-                      {isUser ? 'Usuario' : 'EnergyAI Agent'}
+                      {isUser ? 'Usuario' : 'Asistente EnergIA'}
                     </span>
                     <span>{msg.timestamp.toLocaleTimeString(undefined, {hour: '2-digit', minute:'2-digit'})}</span>
                   </div>
@@ -215,7 +207,7 @@ export default function Assistant({ records, anomalies }: AssistantProps) {
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Preguntame sobre desvíos, consumos de turnos, o medidas de ahorro..."
+            placeholder="Preguntame sobre subsidios, tarifas, costos futuros, eficiencia o huella de carbono..."
             className="flex-1 p-3 rounded-xl border border-slate-800 bg-slate-900/50 text-slate-100 text-sm focus:border-cyan-500 focus:outline-none transition-all placeholder:text-slate-500"
           />
           <button

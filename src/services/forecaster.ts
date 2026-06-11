@@ -32,7 +32,6 @@ export function forecastNext7Days(records: EnergyRecord[]): ForecastResult[] {
   }
 
   // Group historical records by day-of-week (0-6) and hour (0-23) to compute averages
-  // We exclude anomalous periods (e.g. days 15-21 Compressor A leak) to make the forecast reflect normal operations + trend
   const seasonalAverages: Record<number, Record<number, { sum: number; count: number }>> = {};
   for (let d = 0; d < 7; d++) {
     seasonalAverages[d] = {};
@@ -44,7 +43,7 @@ export function forecastNext7Days(records: EnergyRecord[]): ForecastResult[] {
   records.forEach(r => {
     const d = new Date(`${r.date}T00:00:00`).getDay();
     // Exclude week 3 compressor leak days 15-21 from baseline averages
-    const isWeek3Leak = r.equipment === 'Compresor A' && r.date >= '2026-05-15' && r.date <= '2026-05-21';
+    const isWeek3Leak = r.equipment === 'Compresores de Frío Ushuaia' && r.date >= '2026-05-15' && r.date <= '2026-05-21';
     
     if (!isWeek3Leak) {
       seasonalAverages[d][r.hour].sum += r.consumption_kwh;
@@ -53,7 +52,7 @@ export function forecastNext7Days(records: EnergyRecord[]): ForecastResult[] {
   });
 
   const forecastResults: ForecastResult[] = [];
-  const costBase = records[records.length - 1]?.cost_per_kwh || 45.0;
+  const costBase = records[records.length - 1]?.cost_per_kwh || 65.0;
 
   // Generate next 7 days
   for (let i = 1; i <= 7; i++) {
@@ -93,15 +92,15 @@ export function forecastNext7Days(records: EnergyRecord[]): ForecastResult[] {
     // Determine recommendations
     const recommendations: string[] = [];
     if (isWeekend) {
-      recommendations.push("Fin de semana: Asegurar apagado total de sistemas administrativos y climatización secundaria.");
+      recommendations.push("Fin de semana: Apagar la calefacción eléctrica de soporte en oficinas públicas para reducir costos base.");
     } else {
-      recommendations.push("Monitorear picos en el turno tarde. Si es viable, secuenciar el arranque de motores grandes.");
+      recommendations.push("Monitorear picos en el turno tarde (18:00 a 22:00 hs) para evitar recargos por potencia contratada en Río Grande.");
     }
     
     if (trendFactor > 0.03) {
-      recommendations.push(`Tendencia alcista activa (+${(trendFactor * 100).toFixed(1)}%). Inspeccionar el Motor Principal L1 por desgaste.`);
+      recommendations.push(`Tendencia alcista activa (+${(trendFactor * 100).toFixed(1)}%). Inspeccionar la Línea de Ensamblaje industrial por desvíos.`);
     } else {
-      recommendations.push("Mantener configuraciones de termostatos actuales para consolidar ahorro.");
+      recommendations.push("Mantener pautas de climatización y programar el apagado automático de servidores ociosos.");
     }
 
     forecastResults.push({

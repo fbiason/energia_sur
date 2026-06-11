@@ -4,11 +4,8 @@ import {
   ShieldAlert, 
   CheckCircle2, 
   Clock, 
-  HelpCircle, 
   Wrench, 
-  Filter, 
-  Info,
-  RefreshCw
+  Info
 } from 'lucide-react';
 
 interface AnomaliesProps {
@@ -211,7 +208,7 @@ export default function Anomalies({ anomalies, setAnomalies }: AnomaliesProps) {
                 <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-900 text-slate-300 flex gap-2.5 text-xs">
                   <Wrench className="h-4.5 w-4.5 text-cyan-400 shrink-0 mt-0.5" />
                   <div>
-                    <span className="font-bold text-slate-200">Acción sugerida por EnergyAI:</span>
+                    <span className="font-bold text-slate-200">Acción sugerida por EnergIA SUR:</span>
                     <p className="mt-1 leading-relaxed text-slate-400">{anom.recommendation}</p>
                   </div>
                 </div>

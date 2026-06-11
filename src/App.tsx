@@ -22,9 +22,9 @@ export default function App() {
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
   const [isSimulated, setIsSimulated] = useState<boolean>(true);
 
-  // Initialize with simulated demo data
   useEffect(() => {
     const demoRecords = generateDemoData();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRecords(demoRecords);
     
     const detected = detectAnomalies(demoRecords);

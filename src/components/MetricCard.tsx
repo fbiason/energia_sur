@@ -4,7 +4,7 @@ import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 interface MetricCardProps {
   title: string;
   value: string | number;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   trend?: {
     value: string | number;
     isGood: boolean; // isGood means positive for saving, negative for cost/consumption
