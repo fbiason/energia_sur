@@ -20,15 +20,15 @@ interface SidebarProps {
 
 export default function Sidebar({ activeTab, setActiveTab, anomalyCount }: SidebarProps) {
   const menuItems = [
-    { id: 'dashboard', name: 'Monitoreo General', icon: LayoutDashboard },
+    { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
     { id: 'upload', name: 'Carga de Datos', icon: UploadCloud },
     { id: 'analysis', name: 'Análisis de Consumo', icon: TrendingUp },
-    { id: 'anomalies', name: 'Ineficiencias', icon: AlertTriangle, badge: anomalyCount },
+    { id: 'anomalies', name: 'Anomalías', icon: AlertTriangle, badge: anomalyCount },
     { id: 'predictions', name: 'Predicciones (7d)', icon: Calendar },
-    { id: 'comparator', name: 'Comparador de Sectores', icon: BarChart3 },
-    { id: 'simulator', name: 'Simulador de Escenarios', icon: Calculator },
+    { id: 'comparator', name: 'Comparador de Eficiencia', icon: BarChart3 },
+    { id: 'simulator', name: 'Simulador de Ahorro', icon: Calculator },
     { id: 'assistant', name: 'Asistente EnergIA', icon: MessageSquareCode },
-    { id: 'report', name: 'Reporte de Prospectiva', icon: FileText },
+    { id: 'report', name: 'Reporte Mensual', icon: FileText },
     { id: 'sources', name: 'Fuentes de Datos', icon: Globe },
   ];
 
@@ -37,13 +37,13 @@ export default function Sidebar({ activeTab, setActiveTab, anomalyCount }: Sideb
       {/* Brand Header */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-900 bg-slate-950/50">
         <div className="h-20 w-20 flex items-center justify-center bg-transparent shrink-0">
-          <img src="/logo.png" alt="EnergIA SUR Logo" className="h-full w-full object-contain hover:scale-105 transition-transform duration-300" />
+          <img src="/logo.png" alt="EnergIA Sur Logo" className="h-full w-full object-contain hover:scale-105 transition-transform duration-300" />
         </div>
         <div>
           <h1 className="text-xl font-bold bg-gradient-to-r from-white via-slate-100 to-cyan-400 bg-clip-text text-transparent tracking-wide">
-            EnergIA SUR
+            EnergIA Sur
           </h1>
-          <p className="text-xs text-slate-500 font-mono">v1.0.0 • Tierra del Fuego</p>
+          <p className="text-xs text-slate-500 font-mono">v1.0.0 • Industrial IoT</p>
         </div>
       </div>
 
@@ -88,7 +88,7 @@ export default function Sidebar({ activeTab, setActiveTab, anomalyCount }: Sideb
       {/* System Status Footer */}
       <div className="p-4 border-t border-slate-900 bg-slate-950/30 font-mono text-[10px] text-slate-500 space-y-2">
         <div className="flex justify-between items-center">
-          <span>SISTEMA PROSPECTIVA</span>
+          <span>SISTEMA IoT</span>
           <span className="flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping"></span>
             <span className="text-slate-400">ONLINE</span>
@@ -99,7 +99,7 @@ export default function Sidebar({ activeTab, setActiveTab, anomalyCount }: Sideb
           <span className="text-cyan-400">ACTIVO</span>
         </div>
         <div className="text-[9px] text-slate-600 truncate">
-          NODO: TDF_SISTEMA_AISLADO
+          CWD: IATHON_LOCAL_NODE
         </div>
       </div>
     </aside>

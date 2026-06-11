@@ -22,15 +22,17 @@ export default function App() {
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
   const [isSimulated, setIsSimulated] = useState<boolean>(true);
 
+  // Initialize with simulated demo data
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const demoRecords = generateDemoData();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRecords(demoRecords);
     
     const detected = detectAnomalies(demoRecords);
     setAnomalies(detected);
     setIsSimulated(true);
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Update records and re-run anomaly detection
   const updateRecordsAndAnomalies = useCallback((newRecords: EnergyRecord[]) => {
