@@ -21,7 +21,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
       return;
     }
 
-    if (username.trim() === 'Admin' && password === 'Admin') {
+    if (username.trim() === 'admin' && password === 'admin') {
       setLoading(true);
       // Simulate network request for premium micro-animation
       setTimeout(() => {
@@ -59,13 +59,12 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           </div>
         </div>
 
-        {/* Credentials Banner (Visible as requested) */}
         <div className="bg-cyan-950/40 border border-cyan-900/50 rounded-2xl p-4 text-center space-y-1">
           <div className="text-[10px] font-bold uppercase tracking-wider text-cyan-400 font-mono">Credenciales de Acceso</div>
           <div className="text-xs font-mono text-slate-300">
-            Usuario: <span className="text-white font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-900 select-all">Admin</span>
+            Usuario: <span className="text-white font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-900 select-all">admin</span>
             <span className="mx-2">|</span>
-            Clave: <span className="text-white font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-900 select-all">Admin</span>
+            Clave: <span className="text-white font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-900 select-all">admin</span>
           </div>
         </div>
 
