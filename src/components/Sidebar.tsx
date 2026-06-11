@@ -35,9 +35,9 @@ export default function Sidebar({ activeTab, setActiveTab, anomalyCount }: Sideb
   return (
     <aside className="w-80 h-screen sticky top-0 flex flex-col bg-slate-950 border-r border-slate-800 text-slate-300">
       {/* Brand Header */}
-      <div className="flex items-center gap-3.5 px-6 py-6 border-b border-slate-900 bg-slate-950/50">
-        <div className="h-10 w-10 rounded-xl overflow-hidden border border-slate-800/80 shadow-[0_0_15px_rgba(6,182,212,0.15)] flex items-center justify-center bg-slate-900 shrink-0">
-          <img src="/logo.png" alt="EnergIA SUR Logo" className="h-full w-full object-cover scale-110" />
+      <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-900 bg-slate-950/50">
+        <div className="h-20 w-20 flex items-center justify-center bg-transparent shrink-0">
+          <img src="/logo.png" alt="EnergIA SUR Logo" className="h-full w-full object-contain hover:scale-105 transition-transform duration-300" />
         </div>
         <div>
           <h1 className="text-xl font-bold bg-gradient-to-r from-white via-slate-100 to-cyan-400 bg-clip-text text-transparent tracking-wide">
