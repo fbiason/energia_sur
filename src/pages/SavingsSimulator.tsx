@@ -51,41 +51,152 @@ export default function SavingsSimulator({ records }: SavingsSimulatorProps) {
     };
   }, [records]);
 
-  // Input states
-  const [baselineKwh, setBaselineKwh] = useState<number>(defaults.kwh);
-  const [baseTariff, setBaseTariff] = useState<number>(defaults.cost);
+  // Tab selector state
+  // 'slider' = Control deslizante, 'manual' = Ingreso manual, 'factura' = Cargar desde factura
+  const [inputMode, setInputMode] = useState<'slider' | 'manual' | 'factura'>('slider');
+
+  // Input states for Slider Mode
+  const [sliderKwh, setSliderKwh] = useState<number>(defaults.kwh);
+  const [sliderTariff, setSliderTariff] = useState<number>(defaults.cost);
+
+  // Input states for Manual Input
+  const [manualKwh, setManualKwh] = useState<string>('');
+  const [manualTotalBill, setManualTotalBill] = useState<string>('');
+  const [manualTariff, setManualTariff] = useState<string>('');
+  const [manualFixed, setManualFixed] = useState<string>('');
+
+  // Input states for Factura
+  const [facturaKwh, setFacturaKwh] = useState<string>('');
+  const [facturaTotal, setFacturaTotal] = useState<string>('');
+  const [facturaFixed, setFacturaFixed] = useState<string>('');
 
   // Trigger state update if defaults change
   /* eslint-disable react-hooks/set-state-in-effect */
   React.useEffect(() => {
-    setBaselineKwh(defaults.kwh);
-    setBaseTariff(defaults.cost);
+    setSliderKwh(defaults.kwh);
+    setSliderTariff(defaults.cost);
+    
+    setManualKwh(defaults.kwh.toString());
+    setManualTariff(defaults.cost.toString());
+    setManualFixed('3500');
+    setManualTotalBill(((defaults.kwh * defaults.cost) + 3500).toString());
+
+    setFacturaKwh(defaults.kwh.toString());
+    setFacturaTotal(((defaults.kwh * defaults.cost) + 3500).toString());
+    setFacturaFixed('3500');
   }, [defaults]);
   /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Handlers for manual input calculations
+  const handleManualKwhChange = (val: string) => {
+    setManualKwh(val);
+    const kwh = parseFloat(val) || 0;
+    const total = parseFloat(manualTotalBill) || 0;
+    const fixed = parseFloat(manualFixed) || 0;
+    if (kwh > 0 && total > 0) {
+      const computedTariff = (total - fixed) / kwh;
+      setManualTariff(computedTariff > 0 ? computedTariff.toFixed(2) : '0');
+    }
+  };
+
+  const handleManualTotalChange = (val: string) => {
+    setManualTotalBill(val);
+    const total = parseFloat(val) || 0;
+    const kwh = parseFloat(manualKwh) || 0;
+    const fixed = parseFloat(manualFixed) || 0;
+    if (kwh > 0 && total > 0) {
+      const computedTariff = (total - fixed) / kwh;
+      setManualTariff(computedTariff > 0 ? computedTariff.toFixed(2) : '0');
+    }
+  };
+
+  const handleManualTariffChange = (val: string) => {
+    setManualTariff(val);
+    const tariff = parseFloat(val) || 0;
+    const kwh = parseFloat(manualKwh) || 0;
+    const fixed = parseFloat(manualFixed) || 0;
+    if (kwh > 0) {
+      const computedTotal = (kwh * tariff) + fixed;
+      setManualTotalBill(computedTotal.toFixed(2));
+    }
+  };
+
+  const handleManualFixedChange = (val: string) => {
+    setManualFixed(val);
+    const fixed = parseFloat(val) || 0;
+    const kwh = parseFloat(manualKwh) || 0;
+    const total = parseFloat(manualTotalBill) || 0;
+    if (kwh > 0 && total > 0) {
+      const computedTariff = (total - fixed) / kwh;
+      setManualTariff(computedTariff > 0 ? computedTariff.toFixed(2) : '0');
+    }
+  };
+
+  // Factura calculations derived state
+  const facturaCalculations = useMemo(() => {
+    const kwh = parseFloat(facturaKwh) || 0;
+    const total = parseFloat(facturaTotal) || 0;
+    const fixed = parseFloat(facturaFixed) || 0;
+
+    // Si el usuario carga únicamente consumo e importe total, fixed = 0, costo = total / kwh
+    const costPerKwh = kwh > 0 ? Math.max(0, (total - fixed) / kwh) : 0;
+    const pureEnergyCost = kwh * costPerKwh;
+
+    const totalForPct = total || 1;
+    const pureEnergyPct = (pureEnergyCost / totalForPct) * 100;
+    const fixedChargesPct = (fixed / totalForPct) * 100;
+
+    return {
+      costPerKwh,
+      pureEnergyCost,
+      fixedCharges: fixed,
+      pureEnergyPct,
+      fixedChargesPct
+    };
+  }, [facturaKwh, facturaTotal, facturaFixed]);
+
+  // Derived active state for simulator
+  const activeKwh = useMemo(() => {
+    if (inputMode === 'slider') return sliderKwh;
+    if (inputMode === 'manual') return parseFloat(manualKwh) || 0;
+    return parseFloat(facturaKwh) || 0;
+  }, [inputMode, sliderKwh, manualKwh, facturaKwh]);
+
+  const activeTariff = useMemo(() => {
+    if (inputMode === 'slider') return sliderTariff;
+    if (inputMode === 'manual') return parseFloat(manualTariff) || 0;
+    return facturaCalculations.costPerKwh;
+  }, [inputMode, sliderTariff, manualTariff, facturaCalculations.costPerKwh]);
+
+  const activeFixedCharges = useMemo(() => {
+    if (inputMode === 'slider') return 0;
+    if (inputMode === 'manual') return parseFloat(manualFixed) || 0;
+    return facturaCalculations.fixedCharges;
+  }, [inputMode, manualFixed, facturaCalculations.fixedCharges]);
 
   // Define Scenarios Math
   const scenarios = useMemo(() => {
     // Escenario A: Subsidio actual + invierno promedio
-    const kwhA = Math.round(baselineKwh * 1.0);
-    const tariffA = baseTariff; // Tarifa actual subsidiada
-    const costMonthlyA = kwhA * tariffA;
+    const kwhA = Math.round(activeKwh * 1.0);
+    const tariffA = activeTariff; // Tarifa actual subsidiada
+    const costMonthlyA = (kwhA * tariffA) + activeFixedCharges;
     const costAnnualA = costMonthlyA * 12;
     const vulnerabilityA = 22; // Bajo
 
     // Escenario B: Reducción del 50% del subsidio + invierno severo
-    const kwhB = Math.round(baselineKwh * 1.25); // +25% heating load
-    const tariffB = baseTariff * 2.0; // 50% cut doubles tariff
-    const costMonthlyB = kwhB * tariffB;
+    const kwhB = Math.round(activeKwh * 1.25); // +25% heating load
+    const tariffB = activeTariff * 2.0; // 50% cut doubles tariff
+    const costMonthlyB = (kwhB * tariffB) + activeFixedCharges;
     const costAnnualB = costMonthlyB * 12;
-    const increaseB = ((costMonthlyB - costMonthlyA) / costMonthlyA) * 100;
+    const increaseB = costMonthlyA > 0 ? ((costMonthlyB - costMonthlyA) / costMonthlyA) * 100 : 0;
     const vulnerabilityB = 62; // Alto
 
     // Escenario C: Eliminación de subsidio + invierno extremo
-    const kwhC = Math.round(baselineKwh * 1.50); // +50% heating load (emergency radiadores)
-    const tariffC = baseTariff * 4.0; // 100% cut quadruples tariff
-    const costMonthlyC = kwhC * tariffC;
+    const kwhC = Math.round(activeKwh * 1.50); // +50% heating load (emergency radiadores)
+    const tariffC = activeTariff * 4.0; // 100% cut quadruples tariff
+    const costMonthlyC = (kwhC * tariffC) + activeFixedCharges;
     const costAnnualC = costMonthlyC * 12;
-    const increaseC = ((costMonthlyC - costMonthlyA) / costMonthlyA) * 100;
+    const increaseC = costMonthlyA > 0 ? ((costMonthlyC - costMonthlyA) / costMonthlyA) * 100 : 0;
     const vulnerabilityC = 95; // Crítico
 
     return [
@@ -132,7 +243,7 @@ export default function SavingsSimulator({ records }: SavingsSimulatorProps) {
         gaugeColor: '#f43f5e'
       }
     ];
-  }, [baselineKwh, baseTariff]);
+  }, [activeKwh, activeTariff, activeFixedCharges]);
 
   const chartData = useMemo(() => {
     return scenarios.map(sc => ({
@@ -161,7 +272,7 @@ export default function SavingsSimulator({ records }: SavingsSimulatorProps) {
     return `# REPORTE DE ESCENARIOS TARIFARIOS Y PROSPECTIVA CLIMÁTICA
 **Plataforma EnergIA Sur**  
 *Fecha: ${todayStr}*  
-*Instalación: Tierra del Fuego / Consumo de Base: ${formatKwh(baselineKwh)}*
+*Instalación: Tierra del Fuego / Consumo de Base: ${formatKwh(activeKwh)}*
 
 ---
 
@@ -209,8 +320,8 @@ La generación termoeléctrica local por turbinas de gas natural en Tierra del F
 1. **Transición a Sistemas de Calefacción a Gas**: Evitar el soporte de radiadores eléctricos de resistencia, ya que multiplican el consumo por 4 en días fríos.
 2. **Hermeticidad Estructural (Aberturas)**: Instalar doble vidriado (DVH) y burletes para aislar ráfagas de viento y conservar el calor interno.
 3. **Corte y Standby Preventivo**: Desconectar totalmente equipamientos auxiliares que queden en standby durante días de tormenta extrema.
-`;
-  }, [baselineKwh, scenarios]);
+    `;
+  }, [activeKwh, scenarios]);
 
   const handleCopyReport = async () => {
     try {
@@ -281,59 +392,280 @@ La generación termoeléctrica local por turbinas de gas natural en Tierra del F
         </div>
       </div>
 
-      {/* Simulator Inputs Controls */}
-      <div className="glass-panel p-6 rounded-2xl border border-slate-850 bg-slate-900/30 grid grid-cols-1 md:grid-cols-2 gap-8">
-        
-        {/* Input 1: Baseline Monthly kWh */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <label className="text-xs font-bold uppercase tracking-wider font-mono text-slate-400 flex items-center gap-1.5">
-              <Sliders className="h-4 w-4 text-cyan-400" /> Consumo Mensual Base
-            </label>
-            <span className="text-sm font-bold font-mono text-white bg-slate-950 border border-slate-900 px-3 py-1 rounded-xl">
-              {formatKwh(baselineKwh)}
-            </span>
-          </div>
-          <input
-            type="range"
-            min="2000"
-            max="120000"
-            step="500"
-            value={baselineKwh}
-            onChange={(e) => setBaselineKwh(parseInt(e.target.value, 10))}
-            className="w-full h-1.5 rounded-lg bg-slate-950 appearance-none cursor-pointer accent-cyan-500"
-          />
-          <div className="flex justify-between text-[10px] font-mono text-slate-600">
-            <span>2.000 kWh</span>
-            <span>120.000 kWh</span>
-          </div>
+      {/* Selector de Modo de Entrada */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex bg-slate-950/60 p-1.5 rounded-xl border border-slate-850">
+          <button
+            onClick={() => setInputMode('slider')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-2 ${
+              inputMode === 'slider'
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-950/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900/50'
+            }`}
+          >
+            <Sliders className="h-3.5 w-3.5" /> Control Deslizante
+          </button>
+          <button
+            onClick={() => setInputMode('manual')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-2 ${
+              inputMode === 'manual'
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-950/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900/50'
+            }`}
+          >
+            <Calculator className="h-3.5 w-3.5" /> Ingreso Manual
+          </button>
+          <button
+            onClick={() => setInputMode('factura')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-2 ${
+              inputMode === 'factura'
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-950/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900/50'
+            }`}
+          >
+            <FileText className="h-3.5 w-3.5" /> Cargar desde Factura
+          </button>
         </div>
+      </div>
 
-        {/* Input 2: Base Subsidized Tariff */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <label className="text-xs font-bold uppercase tracking-wider font-mono text-slate-400 flex items-center gap-1.5">
-              <DollarSign className="h-4 w-4 text-cyan-400" /> Tarifa Subsidiada Base
-            </label>
-            <span className="text-sm font-bold font-mono text-white bg-slate-950 border border-slate-900 px-3 py-1 rounded-xl">
-              {formatCurrency(baseTariff)}/kWh
-            </span>
-          </div>
-          <input
-            type="range"
-            min="10"
-            max="180"
-            step="1"
-            value={baseTariff}
-            onChange={(e) => setBaseTariff(parseFloat(e.target.value))}
-            className="w-full h-1.5 rounded-lg bg-slate-950 appearance-none cursor-pointer accent-cyan-500"
-          />
-          <div className="flex justify-between text-[10px] font-mono text-slate-600">
-            <span>$10 / kWh</span>
-            <span>$180 / kWh</span>
-          </div>
-        </div>
+      {/* Simulator Inputs Controls Container */}
+      <div className="glass-panel p-6 rounded-2xl border border-slate-850 bg-slate-900/30">
+        {inputMode === 'slider' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in">
+            {/* Input 1: Baseline Monthly kWh */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-bold uppercase tracking-wider font-mono text-slate-400 flex items-center gap-1.5">
+                  <Sliders className="h-4 w-4 text-cyan-400" /> Consumo Mensual Base
+                </label>
+                <span className="text-sm font-bold font-mono text-white bg-slate-950 border border-slate-900 px-3 py-1 rounded-xl">
+                  {formatKwh(sliderKwh)}
+                </span>
+              </div>
+              <input
+                type="range"
+                min="2000"
+                max="120000"
+                step="500"
+                value={sliderKwh}
+                onChange={(e) => setSliderKwh(parseInt(e.target.value, 10))}
+                className="w-full h-1.5 rounded-lg bg-slate-950 appearance-none cursor-pointer accent-cyan-500"
+              />
+              <div className="flex justify-between text-[10px] font-mono text-slate-600">
+                <span>2.000 kWh</span>
+                <span>120.000 kWh</span>
+              </div>
+            </div>
 
+            {/* Input 2: Base Subsidized Tariff */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-bold uppercase tracking-wider font-mono text-slate-400 flex items-center gap-1.5">
+                  <DollarSign className="h-4 w-4 text-cyan-400" /> Tarifa Subsidiada Base
+                </label>
+                <span className="text-sm font-bold font-mono text-white bg-slate-950 border border-slate-900 px-3 py-1 rounded-xl">
+                  {formatCurrency(sliderTariff)}/kWh
+                </span>
+              </div>
+              <input
+                type="range"
+                min="10"
+                max="180"
+                step="1"
+                value={sliderTariff}
+                onChange={(e) => setSliderTariff(parseFloat(e.target.value))}
+                className="w-full h-1.5 rounded-lg bg-slate-950 appearance-none cursor-pointer accent-cyan-500"
+              />
+              <div className="flex justify-between text-[10px] font-mono text-slate-600">
+                <span>$10 / kWh</span>
+                <span>$180 / kWh</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {inputMode === 'manual' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 animate-fade-in">
+            {/* Consumo */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider font-mono text-slate-400">
+                Consumo mensual (kWh)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  value={manualKwh}
+                  onChange={(e) => handleManualKwhChange(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  placeholder="ej: 15000"
+                />
+                <span className="absolute right-3 top-2.5 text-xs text-slate-500 font-mono">kWh</span>
+              </div>
+            </div>
+
+            {/* Importe total */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider font-mono text-slate-400">
+                Importe total de factura ($)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  value={manualTotalBill}
+                  onChange={(e) => handleManualTotalChange(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  placeholder="ej: 980000"
+                />
+                <span className="absolute right-3 top-2.5 text-xs text-slate-500 font-mono">ARS</span>
+              </div>
+            </div>
+
+            {/* Tarifa energética */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider font-mono text-slate-400">
+                Tarifa energética ($/kWh)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={manualTariff}
+                  onChange={(e) => handleManualTariffChange(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  placeholder="ej: 65.00"
+                />
+                <span className="absolute right-3 top-2.5 text-xs text-slate-500 font-mono">$/kWh</span>
+              </div>
+            </div>
+
+            {/* Cargos fijos */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider font-mono text-slate-400">
+                Cargos fijos mensuales ($)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  value={manualFixed}
+                  onChange={(e) => handleManualFixedChange(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-xl px-4 py-2.5 text-sm font-mono text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  placeholder="ej: 3500"
+                />
+                <span className="absolute right-3 top-2.5 text-xs text-slate-500 font-mono">ARS</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {inputMode === 'factura' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in">
+            {/* Form */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider font-mono text-cyan-400 font-semibold">Datos de Factura Eléctrica (Cargar desde Factura)</h4>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Consumo */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-wider font-mono text-slate-400">Consumo (kWh)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={facturaKwh}
+                    onChange={(e) => setFacturaKwh(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    placeholder="ej: 15000"
+                  />
+                </div>
+
+                {/* Importe Total */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-wider font-mono text-slate-400">Importe Total ($)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={facturaTotal}
+                    onChange={(e) => setFacturaTotal(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    placeholder="ej: 980000"
+                  />
+                </div>
+
+                {/* Cargos Fijos */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-wider font-mono text-slate-400">Cargos Fijos ($)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={facturaFixed}
+                    onChange={(e) => setFacturaFixed(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    placeholder="ej: 3500"
+                  />
+                </div>
+              </div>
+
+              <div className="text-[11px] text-slate-500 leading-relaxed pt-2">
+                💡 Los valores calculados se aplican de forma inmediata al simulador de escenarios y proyecciones de ahorro de la parte inferior.
+              </div>
+            </div>
+
+            {/* Calculated Results */}
+            <div className="glass-panel p-5 rounded-xl border border-slate-800 bg-slate-950/40 space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider font-mono text-cyan-400 font-semibold">Análisis y Distribución de Costos</h4>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <span className="text-[10px] text-slate-500 font-mono uppercase">Costo por kWh calculado:</span>
+                  <div className="text-base font-bold text-white font-mono">{formatCurrency(facturaCalculations.costPerKwh)}/kWh</div>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] text-slate-500 font-mono uppercase">Costo Puro de Energía:</span>
+                  <div className="text-base font-bold text-cyan-400 font-mono">{formatCurrency(facturaCalculations.pureEnergyCost)}</div>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-2 border-t border-slate-900/60">
+                <span className="text-[10px] text-slate-400 font-mono uppercase">Participación en Factura:</span>
+                
+                {/* ProgressBar 1: Pure Energy */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs font-mono">
+                    <span className="text-slate-400 flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-cyan-400" /> Energía Pura
+                    </span>
+                    <span className="text-white font-bold">{facturaCalculations.pureEnergyPct.toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-slate-950 overflow-hidden">
+                    <div 
+                      className="h-full bg-cyan-400 transition-all duration-500"
+                      style={{ width: `${facturaCalculations.pureEnergyPct}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* ProgressBar 2: Fixed Charges */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs font-mono">
+                    <span className="text-slate-400 flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: '#ea580c' }} /> Cargos Fijos
+                    </span>
+                    <span className="text-white font-bold">{facturaCalculations.fixedChargesPct.toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-slate-950 overflow-hidden">
+                    <div 
+                      className="h-full transition-all duration-550"
+                      style={{ width: `${facturaCalculations.fixedChargesPct}%`, backgroundColor: '#ea580c' }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Scenario Cards */}
